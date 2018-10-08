@@ -3,6 +3,7 @@
 namespace WysiwygCleaner\Html;
 
 use WysiwygCleaner\ParserException;
+use WysiwygCleaner\TypeUtils;
 
 class HtmlParser
 {
@@ -43,7 +44,7 @@ class HtmlParser
 
             if ($sourceChild instanceof \DOMCharacterData) {
                 if ($sourceChild->childNodes !== null && $sourceChild->childNodes->length) {
-                    throw new ParserException('"' . get_class($sourceChild) . '" has non-empty child nodes');
+                    throw new ParserException('"' . TypeUtils::getClass($sourceChild) . '" has non-empty child nodes');
                 }
 
                 if ($destinationChild instanceof HtmlText) {
@@ -62,7 +63,9 @@ class HtmlParser
                 if ($sourceChild->attributes !== null) {
                     foreach ($sourceChild->attributes as $attribute) {
                         if (!($attribute instanceof \DOMAttr)) {
-                            throw new ParserException('"' . get_class($sourceChild) . '" instead of DOMAttr in attributes collection');
+                            throw new ParserException(
+                                '"' . TypeUtils::getClass($sourceChild) . '" instead of DOMAttr in attributes collection'
+                            );
                         }
 
                         $destinationChild->setAttribute($attribute->name, $attribute->value);
@@ -74,7 +77,7 @@ class HtmlParser
                 continue;
             }
 
-            throw new ParserException('Doesn\'t know what to do with "' . get_class($sourceChild) . '"');
+            throw new ParserException('Doesn\'t know what to do with "' . TypeUtils::getClass($sourceChild) . '"');
         }
     }
 }

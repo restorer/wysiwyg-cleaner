@@ -4,7 +4,7 @@ namespace WysiwygCleaner\Html;
 
 class HtmlText implements HtmlNode
 {
-    private $text = '';
+    private $text;
 
     public function __construct(string $text)
     {

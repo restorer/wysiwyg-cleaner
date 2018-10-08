@@ -4,7 +4,7 @@ namespace WysiwygCleaner\Html;
 
 class HtmlElement implements HtmlNode, HtmlContainer
 {
-    private $tag = '';
+    private $tag;
     private $attributes = [];
     private $children = [];
 
