@@ -6,4 +6,5 @@ interface HtmlContainer
 {
     public function getChildren() : array;
     public function appendChild(HtmlNode $child);
+    public function prettyDump() : string;
 }

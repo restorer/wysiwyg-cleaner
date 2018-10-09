@@ -3,9 +3,14 @@
 namespace WysiwygCleaner\Css;
 
 // TODO: support more complex selectors than just tag name
+// Mutable (via declaration)
 class CssStyleSheet
 {
     private $declarations = [];
+
+    public function __construct()
+    {
+    }
 
     public function getDeclarations() : array
     {
@@ -17,20 +22,16 @@ class CssStyleSheet
         $selectorRepresentation = $declaration->getSelector()->getRepresentation();
 
         if (isset($this->declarations[$selectorRepresentation])) {
-            $existingDeclaration = $this->declarations[$selectorRepresentation];
-
-            foreach ($declaration->getRuleSet()->getRules() as $rule) {
-                $existingDeclaration->getRuleSet()->addRule($rule);
-            }
+            $this->declarations[$selectorRepresentation]->getRuleSet()->mergeWith($declaration->getRuleSet()->getRules());
         } else {
             $this->declarations[$selectorRepresentation] = $declaration;
         }
     }
 
     // TODO: potentially, rules from more that one declaration can be returned
-    public function findMatchedRuleSet(CssSelector $selector) : CssRuleSet
+    public function computeStyle(CssSelector $selector) : CssRuleSet
     {
-        $selectorRepresentation = $declaration->getSelector()->getRepresentation();
-        return isset($this->declarations[$selectorRepresentation]) ? $this->declarations[$selectorRepresentation]->getRuleSet() : null;
+        $representation = $selector->getRepresentation();
+        return isset($this->declarations[$representation]) ? $this->declarations[$representation]->getRuleSet() : (new CssRuleSet());
     }
 }

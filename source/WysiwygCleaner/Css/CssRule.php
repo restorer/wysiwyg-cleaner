@@ -2,6 +2,7 @@
 
 namespace WysiwygCleaner\Css;
 
+// Immutable
 class CssRule
 {
     private $property = '';
@@ -10,7 +11,7 @@ class CssRule
 
     public function __construct(string $property, string $value, bool $important = false)
     {
-        $this->property = $property;
+        $this->property = \strtolower($property);
         $this->value = $value;
         $this->important = $important;
     }

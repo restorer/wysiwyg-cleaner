@@ -7,6 +7,10 @@ use WysiwygCleaner\TypeUtils;
 
 class HtmlParser
 {
+    public function __construct()
+    {
+    }
+
     public function parse(string $html, bool $shouldFailOnWarnings = false) : HtmlDocument
     {
         $prevUseErrors = libxml_use_internal_errors(true);

@@ -1,8 +1,8 @@
 <?php
 
-namespace WysiwygCleaner\Css;
+namespace WysiwygCleaner\Layout;
 
-class CssUtils
+class LayoutUtils
 {
     const USER_AGENT_STYLESHEET = '
         /* Block (block, list-item, table...) */
@@ -11,6 +11,7 @@ class CssUtils
         article { display: block; }
         aside { display: block; }
         blockquote { display: block; }
+        br { display: block; /* actually inline, but we treat it as block to simplify cleaning */ }
         caption { display: table-caption; }
         col { display: table-column; }
         colgroup { display: table-column-group; }
@@ -60,13 +61,12 @@ class CssUtils
 
         /* Inline */
 
-        a { display: inline; }
+        a { display: inline; color: var(--link-color); /* Usually "a" has some color, we use css variable, to avoid unnecessary merging */ }
         abbr { display: inline; }
         acronym { display: inline; }
         b { display: inline; font-weight: bold; }
         bdo { display: inline; }
         big { display: inline; font-size: larger; }
-        br { display: inline; }
         canvas { display: inline; }
         cite { display: inline; font-style: italic; }
         code { display: inline; font-family: monospace; }

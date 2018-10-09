@@ -2,6 +2,7 @@
 
 namespace WysiwygCleaner\Html;
 
+// Mutable
 class HtmlText implements HtmlNode
 {
     private $text;
@@ -24,5 +25,10 @@ class HtmlText implements HtmlNode
     public function appendText(string $text)
     {
         $this->text .= $text;
+    }
+
+    public function prettyDump() : string
+    {
+        return "HtmlText \"{$this->text}\"\n";
     }
 }

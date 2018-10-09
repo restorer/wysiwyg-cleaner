@@ -3,6 +3,7 @@
 namespace WysiwygCleaner\Css;
 
 // TODO: support something more complex than just tag name
+// Immutable
 class CssSelector
 {
     private $representation;
