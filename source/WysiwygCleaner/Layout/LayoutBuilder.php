@@ -5,6 +5,7 @@ namespace WysiwygCleaner\Layout;
 use WysiwygCleaner\Css\CssParser;
 use WysiwygCleaner\Css\CssRuleSet;
 use WysiwygCleaner\Css\CssSelector;
+use WysiwygCleaner\Css\CssUtils;
 use WysiwygCleaner\Html\HtmlContainer;
 use WysiwygCleaner\Html\HtmlDocument;
 use WysiwygCleaner\Html\HtmlElement;
@@ -14,11 +15,6 @@ use WysiwygCleaner\TypeUtils;
 
 class LayoutBuilder
 {
-    const ATTR_STYLE = 'style';
-    const PROP_DISPLAY = 'display';
-    const DISPLAY_BLOCK = 'block';
-    const DISPLAY_NONE = 'none';
-
     private $cssParser;
     private $baseStylesheet;
 
@@ -28,13 +24,13 @@ class LayoutBuilder
         $this->baseStylesheet = $cssParser->parseStyleSheet($userAgentStylesheet);
     }
 
-    public function build(HtmlDocument $document) : LayoutBlockBox
+    public function build(HtmlDocument $document) : LayoutBox
     {
         $this->computeStyles($document, new CssSelector(''), new CssRuleSet());
         $box = $this->buildLayoutTree($document);
 
-        if (!($box instanceof LayoutBlockBox)) {
-            throw new ParserException('Internal error: LayoutBlockBox expected, but "' . TypeUtils::getClass($box) . '" given');
+        if ($box->isInline()) {
+            throw new ParserException('Internal error: root box must have block context');
         }
 
         return $box;
@@ -43,36 +39,27 @@ class LayoutBuilder
     private function buildLayoutTree(HtmlContainer $container) : LayoutBox
     {
         if ($container instanceof HtmlDocument) {
-            $box = new LayoutBlockBox('', new CssRuleSet());
+            $box = new LayoutBox(true);
         } elseif ($container instanceof HtmlElement) {
-            switch (\strtolower($container->getComputedStyle()->getRuleValue(self::PROP_DISPLAY, ''))) {
-                case self::DISPLAY_NONE:
-                    throw new ParserException('Internal error: root node shouldn\'t have display "none"');
+            $display = $this->getDisplayValue($container);
 
-                case self::DISPLAY_BLOCK:
-                    $box = new LayoutBlockBox($container->getTag(), $container->getComputedStyle());
-                    break;
-
-                default:
-                    $box = new LayoutInlineBox($container->getTag(), $container->getComputedStyle());
+            if ($display === CssUtils::DISPLAY_NONE) {
+                throw new ParserException('Internal error: root node shouldn\'t have display "none"');
             }
+
+            $box = new LayoutBox($display === CssUtils::DISPLAY_BLOCK, $container);
         } else {
             throw new ParserException('Doesn\'t know what to do with container "' . TypeUtils::getClass($container) . '"');
         }
 
-        $resultBox = $box;
-        echo "\n" . $resultBox->prettyDump();
-
         foreach ($container->getChildren() as $child) {
-            echo "\n" . $child->prettyDump();
-
             if ($child instanceof HtmlElement) {
-                switch (\strtolower($child->getComputedStyle()->getRuleValue(self::PROP_DISPLAY, ''))) {
-                    case self::DISPLAY_NONE:
+                switch ($this->getDisplayValue($child)) {
+                    case CssUtils::DISPLAY_NONE:
                         // Skip
                         break;
 
-                    case self::DISPLAY_BLOCK:
+                    case CssUtils::DISPLAY_BLOCK:
                         $box->getBlockContainer()->appendChild($this->buildLayoutTree($child));
                         break;
 
@@ -84,33 +71,38 @@ class LayoutBuilder
             } else {
                 throw new ParserException('Doesn\'t know what to do with child "' . TypeUtils::getClass($child) . '"');
             }
-
-            echo "\n" . $resultBox->prettyDump();
         }
 
-        return $resultBox;
+        return $box;
     }
 
-    private function computeStyles(HtmlContainer $container, CssSelector $selector, CssRuleSet $inlineStyle)
+    private function computeStyles(HtmlContainer $container, CssSelector $selector, CssRuleSet $computedStyle)
     {
         if ($container instanceof HtmlElement) {
-            if ($container->hasAttribute(self::ATTR_STYLE)) {
-                $inlineStyle = $inlineStyle->concat($this->cssParser->parseRuleSet($container->getAttribute(self::ATTR_STYLE)));
+            $selector = $this->generateNestedSelector($selector, $container);
+            $computedStyle = $computedStyle->concat($this->baseStylesheet->computeStyle($selector));
+
+            if ($container->hasAttribute(CssUtils::ATTR_STYLE)) {
+                $computedStyle = $computedStyle->concat($this->cssParser->parseRuleSet($container->getAttribute(CssUtils::ATTR_STYLE)));
             }
 
-            $selector = $this->generateNestedSelector($selector, $container);
-            $container->setComputedStyle($this->baseStylesheet->computeStyle($selector)->concat($inlineStyle));
+            $container->setComputedStyle($computedStyle);
         } elseif (!($container instanceof HtmlDocument)) {
             throw new ParserException('Doesn\'t know what to do with container "' . TypeUtils::getClass($container) . '"');
         }
 
         foreach ($container->getChildren() as $child) {
             if ($child instanceof HtmlElement) {
-                $this->computeStyles($child, $selector, $inlineStyle);
+                $this->computeStyles($child, $selector, $computedStyle);
             } elseif (!($child instanceof HtmlText)) {
                 throw new ParserException('Doesn\'t know what to do with child "' . TypeUtils::getClass($child) . '"');
             }
         }
+    }
+
+    private function getDisplayValue(HtmlElement $element) : string
+    {
+        return \strtolower($element->getComputedStyle()->getRuleValue(CssUtils::PROP_DISPLAY, ''));
     }
 
     private function generateNestedSelector(CssSelector $selector, HtmlElement $element) : CssSelector

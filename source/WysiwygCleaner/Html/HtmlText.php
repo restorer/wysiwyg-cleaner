@@ -2,7 +2,6 @@
 
 namespace WysiwygCleaner\Html;
 
-// Mutable
 class HtmlText implements HtmlNode
 {
     private $text;
@@ -29,6 +28,6 @@ class HtmlText implements HtmlNode
 
     public function prettyDump() : string
     {
-        return "HtmlText \"{$this->text}\"\n";
+        return '#text "' . addcslashes($this->text, "\n\r\t\f\v\"\\") . "\"\n";
     }
 }

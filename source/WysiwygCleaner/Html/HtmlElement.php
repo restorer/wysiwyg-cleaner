@@ -4,12 +4,10 @@ namespace WysiwygCleaner\Html;
 
 use WysiwygCleaner\Css\CssRuleSet;
 
-// Mutable
-class HtmlElement implements HtmlNode, HtmlContainer
+class HtmlElement extends HtmlContainer implements HtmlNode
 {
     private $tag;
     private $attributes = [];
-    private $children = [];
     private $computedStyle;
 
     public function __construct(string $tag)
@@ -42,16 +40,6 @@ class HtmlElement implements HtmlNode, HtmlContainer
         $this->attributes[\strtolower($name)] = $value;
     }
 
-    public function getChildren() : array
-    {
-        return $this->children;
-    }
-
-    public function appendChild(HtmlNode $child)
-    {
-        $this->children[] = $child;
-    }
-
     public function getComputedStyle() : CssRuleSet
     {
         return $this->computedStyle ?? new CssRuleSet();
@@ -64,32 +52,12 @@ class HtmlElement implements HtmlNode, HtmlContainer
 
     public function prettyDump() : string
     {
-        $childrenDump = implode(
-            "\n",
-            array_map(
-                function (HtmlNode $child) {
-                    return trim($child->prettyDump());
-                },
-                $this->children
-            )
-        );
-
-        $childrenDump = implode(
-            "\n",
-            array_map(
-                function (string $line) {
-                    return "    {$line}";
-                },
-                explode("\n", $childrenDump)
-            )
-        );
-
-        $result = "HtmlElement:{$this->tag}";
+        $result = $this->tag;
 
         if ($this->computedStyle !== null) {
-            $result .= "({$this->computedStyle->prettyDump()})";
+            $result .= " { {$this->computedStyle->prettyDump()} }";
         }
 
-        return trim("{$result}\n{$childrenDump}") . "\n";
+        return trim($result . "\n" . parent::prettyDump()) . "\n";
     }
 }

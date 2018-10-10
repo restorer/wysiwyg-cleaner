@@ -1,9 +1,13 @@
 <?php
 
-namespace WysiwygCleaner\Layout;
+namespace WysiwygCleaner;
 
-class LayoutUtils
+class Defaults
 {
+    const FLATTEN_TAGS = ['b', 'em', 'i', 'small', 'span', 'strong'];
+    const KEEP_ATTRIBUTES = ['id', 'class'];
+    const KEEP_SPACE_PROPERTIES = ['/background*/'];
+
     const USER_AGENT_STYLESHEET = '
         /* Block (block, list-item, table...) */
 

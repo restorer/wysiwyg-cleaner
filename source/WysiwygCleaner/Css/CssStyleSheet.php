@@ -3,7 +3,6 @@
 namespace WysiwygCleaner\Css;
 
 // TODO: support more complex selectors than just tag name
-// Mutable (via declaration)
 class CssStyleSheet
 {
     private $declarations = [];

@@ -2,7 +2,6 @@
 
 namespace WysiwygCleaner\Css;
 
-// Mutable
 class CssRuleSet
 {
     private $rules = [];

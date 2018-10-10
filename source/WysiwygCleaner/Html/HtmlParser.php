@@ -15,7 +15,12 @@ class HtmlParser
     {
         $prevUseErrors = libxml_use_internal_errors(true);
         $sourceDom = new \DOMDocument();
-        $success = $sourceDom->loadHTML($html, LIBXML_BIGLINES | LIBXML_COMPACT | LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+
+        $success = $sourceDom->loadHTML(
+            mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'),
+            LIBXML_BIGLINES | LIBXML_COMPACT | LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+
         $errors = libxml_get_errors();
         libxml_clear_errors();
         libxml_use_internal_errors($prevUseErrors);

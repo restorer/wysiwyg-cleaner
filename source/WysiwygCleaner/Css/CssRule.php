@@ -2,7 +2,6 @@
 
 namespace WysiwygCleaner\Css;
 
-// Immutable
 class CssRule
 {
     private $property = '';

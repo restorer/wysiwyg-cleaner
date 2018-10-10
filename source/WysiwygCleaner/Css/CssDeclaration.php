@@ -2,7 +2,6 @@
 
 namespace WysiwygCleaner\Css;
 
-// Mutable (via ruleSet)
 class CssDeclaration
 {
     private $selector;
