@@ -42,6 +42,7 @@ class PaintBuilder
         if (!$container->isAnonymous()) {
             $nearestPaintStyle = $container->getHtmlElement()->getComputedStyle();
         } else {
+            // TODO: implement correct style merging (currently it may work incorrectly for !important properties)
             $nearestPaintStyle = $nearestPaintStyle->concat($this->inlineStyle);
         }
 

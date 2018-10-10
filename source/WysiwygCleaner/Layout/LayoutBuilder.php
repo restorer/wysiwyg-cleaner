@@ -79,6 +79,8 @@ class LayoutBuilder
     private function computeStyles(HtmlContainer $container, CssSelector $selector, CssRuleSet $computedStyle)
     {
         if ($container instanceof HtmlElement) {
+            // TODO: implement correct style merging (currently it may work incorrectly for !important properties)
+
             $selector = $this->generateNestedSelector($selector, $container);
             $computedStyle = $computedStyle->concat($this->baseStylesheet->computeStyle($selector));
 
