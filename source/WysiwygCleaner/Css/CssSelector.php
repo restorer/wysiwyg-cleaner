@@ -2,23 +2,22 @@
 
 namespace WysiwygCleaner\Css;
 
-// TODO: support something more complex than just tag name
 class CssSelector
 {
-    private $representation;
+    private $elementName;
 
-    public function __construct(string $representation)
+    public function __construct(string $elementName)
     {
-        $this->representation = \strtolower($representation);
+        $this->elementName = \strtolower($elementName);
     }
 
-    public function getRepresentation() : string
+    public function getElementName() : string
     {
-        return $this->representation;
+        return $this->elementName;
     }
 
-    public function matches(CssSelector $other)
+    public function equals(CssSelector $other) : bool
     {
-        return $this->representation === $other->representation;
+        return $this->elementName === $other->elementName;
     }
 }

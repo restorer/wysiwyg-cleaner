@@ -2,7 +2,7 @@
 
 namespace WysiwygCleaner\Html;
 
-use WysiwygCleaner\ParserException;
+use WysiwygCleaner\CleanerException;
 use WysiwygCleaner\TypeUtils;
 
 class HtmlParser
@@ -33,7 +33,7 @@ class HtmlParser
                 $errors
             );
 
-            throw new ParserException('Can\'t load html: ' . implode(', ', $errors));
+            throw new CleanerException('Can\'t load html: ' . implode(', ', $errors));
         }
 
         $destinationHtml = new HtmlDocument();
@@ -53,7 +53,7 @@ class HtmlParser
 
             if ($sourceChild instanceof \DOMCharacterData) {
                 if ($sourceChild->childNodes !== null && $sourceChild->childNodes->length) {
-                    throw new ParserException('"' . TypeUtils::getClass($sourceChild) . '" has non-empty child nodes');
+                    throw new CleanerException('"' . TypeUtils::getClass($sourceChild) . '" has non-empty child nodes');
                 }
 
                 if ($destinationChild instanceof HtmlText) {
@@ -72,7 +72,7 @@ class HtmlParser
                 if ($sourceChild->attributes !== null) {
                     foreach ($sourceChild->attributes as $attribute) {
                         if (!($attribute instanceof \DOMAttr)) {
-                            throw new ParserException(
+                            throw new CleanerException(
                                 '"' . TypeUtils::getClass($sourceChild) . '" instead of DOMAttr in attributes collection'
                             );
                         }
@@ -86,7 +86,7 @@ class HtmlParser
                 continue;
             }
 
-            throw new ParserException('Doesn\'t know what to do with "' . TypeUtils::getClass($sourceChild) . '"');
+            throw new CleanerException('Doesn\'t know what to do with "' . TypeUtils::getClass($sourceChild) . '"');
         }
     }
 }

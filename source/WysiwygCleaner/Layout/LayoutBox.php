@@ -110,7 +110,12 @@ class LayoutBox implements LayoutElement
         $result = ($this->blockContext ? '#block' : '#inline') . '-box';
 
         if ($this->htmlElement !== null) {
-            $result .= " : {$this->htmlElement->getTag()} { " . $this->htmlElement->getComputedStyle()->prettyDump() . ' }';
+            $result .= ' : ' . $this->htmlElement->getTag();
+            $computedStyleDump = $this->htmlElement->getComputedStyle()->prettyDump();
+
+            if ($computedStyleDump !== '') {
+                $result .= " { {$computedStyleDump} }";
+            }
         }
 
         return trim("{$result}\n{$childrenDump}") . "\n";

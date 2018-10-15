@@ -11,6 +11,11 @@ abstract class HtmlContainer
         return $this->children;
     }
 
+    public function setChildren(array $children)
+    {
+        $this->children = $children;
+    }
+
     public function appendChild(HtmlNode $child)
     {
         $this->children[] = $child;

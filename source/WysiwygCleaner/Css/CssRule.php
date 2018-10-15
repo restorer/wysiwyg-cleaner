@@ -4,29 +4,22 @@ namespace WysiwygCleaner\Css;
 
 class CssRule
 {
-    private $property = '';
-    private $value = '';
-    private $important = false;
+    private $selectors;
+    private $style;
 
-    public function __construct(string $property, string $value, bool $important = false)
+    public function __construct(array $selectors, CssStyle $style)
     {
-        $this->property = \strtolower($property);
-        $this->value = $value;
-        $this->important = $important;
+        $this->selectors = $selectors;
+        $this->style = $style;
     }
 
-    public function getProperty() : string
+    public function getSelectors() : array
     {
-        return $this->property;
+        return $this->selectors;
     }
 
-    public function getValue() : string
+    public function getStyle() : CssStyle
     {
-        return $this->value;
-    }
-
-    public function isImportant() : bool
-    {
-        return $this->important;
+        return $this->style;
     }
 }

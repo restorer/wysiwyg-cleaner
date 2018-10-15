@@ -2,35 +2,29 @@
 
 namespace WysiwygCleaner\Css;
 
-// TODO: support more complex selectors than just tag name
 class CssStyleSheet
 {
-    private $declarations = [];
+    private $styleMap = [];
 
     public function __construct()
     {
     }
 
-    public function getDeclarations() : array
+    public function append(CssRule $rule)
     {
-        return $this->declarations;
-    }
+        foreach ($rule->getSelectors() as $selector) {
+            $elementName = $selector->getElementName();
 
-    public function addDeclaration(CssDeclaration $declaration)
-    {
-        $selectorRepresentation = $declaration->getSelector()->getRepresentation();
-
-        if (isset($this->declarations[$selectorRepresentation])) {
-            $this->declarations[$selectorRepresentation]->getRuleSet()->mergeWith($declaration->getRuleSet()->getRules());
-        } else {
-            $this->declarations[$selectorRepresentation] = $declaration;
+            if (isset($this->styleMap[$elementName])) {
+                $this->styleMap[$elementName]->appendAll($rule->getStyle());
+            } else {
+                $this->styleMap[$elementName] = $rule->getStyle();
+            }
         }
     }
 
-    // TODO: potentially, rules from more that one declaration can be returned
-    public function computeStyle(CssSelector $selector) : CssRuleSet
+    public function computeStyle(CssSelector $selector) : CssStyle
     {
-        $representation = $selector->getRepresentation();
-        return isset($this->declarations[$representation]) ? $this->declarations[$representation]->getRuleSet() : (new CssRuleSet());
+        return $this->styleMap[$selector->getElementName()] ?? new CssStyle();
     }
 }

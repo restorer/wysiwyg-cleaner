@@ -4,9 +4,10 @@ namespace WysiwygCleaner\Css;
 
 use Sabberworm\CSS\OutputFormat as SabberwormCssOutputFormat;
 use Sabberworm\CSS\Parser as SabberwormCssParser;
+use Sabberworm\CSS\Property\Selector as SabberwormSelector;
 use Sabberworm\CSS\RuleSet\DeclarationBlock as SabberwormCssDeclarationBlock;
 use Sabberworm\CSS\Value\Value as SabberwormCssValue;
-use WysiwygCleaner\ParserException;
+use WysiwygCleaner\CleanerException;
 use WysiwygCleaner\TypeUtils;
 
 class CssParser
@@ -21,31 +22,35 @@ class CssParser
     public function parseStyleSheet(string $styleSheet) : CssStyleSheet
     {
         $contents = (new SabberwormCssParser($styleSheet))->parse()->getContents();
-        $styleSheet = new CssStyleSheet();
+        $result = new CssStyleSheet();
 
         foreach ($contents as $block) {
-            if ($block instanceof SabberwormCssDeclarationBlock) {
-                $ruleSet = $this->parseDeclarationBlock($block);
-
-                foreach ($block->getSelectors() as $selector) {
-                    $styleSheet->addDeclaration(new CssDeclaration(new CssSelector($selector->getSelector()), $ruleSet));
-                }
-
-                continue;
+            if (!$block instanceof SabberwormCssDeclarationBlock) {
+                throw new CleanerException('Doesn\'t know what to do with "' . TypeUtils::getClass($block) . '"');
             }
 
-            throw new ParserException('Doesn\'t know what to do with "' . TypeUtils::getClass($block) . '"');
+            $result->append(
+                new CssRule(
+                    array_map(
+                        function (SabberwormSelector $selector) {
+                            return new CssSelector($selector->getSelector());
+                        },
+                        $block->getSelectors()
+                    ),
+                    $this->parseDeclarationBlock($block)
+                )
+            );
         }
 
-        return $styleSheet;
+        return $result;
     }
 
-    public function parseRuleSet(string $ruleSet) : CssRuleSet
+    public function parseStyle(string $style) : CssStyle
     {
-        $contents = (new SabberwormCssParser("ruleset { {$ruleSet} }"))->parse()->getContents();
+        $contents = (new SabberwormCssParser("style { {$style} }"))->parse()->getContents();
 
         if (\count($contents) !== 1) {
-            throw new ParserException(
+            throw new CleanerException(
                 'Expecting 1 (one) contents item, but ' . \count($contents) . ' given'
             );
         }
@@ -53,7 +58,7 @@ class CssParser
         $block = $contents[0];
 
         if (!($block instanceof SabberwormCssDeclarationBlock)) {
-            throw new ParserException(
+            throw new CleanerException(
                 'Expecting DeclarationBlock, but "' . TypeUtils::getClass($declarationBlock) . '" given'
             );
         }
@@ -61,30 +66,30 @@ class CssParser
         $selectors = $block->getSelectors();
 
         if (\count($selectors) !== 1) {
-            throw new ParserException(
+            throw new CleanerException(
                 'Expecting 1 (one) declaration block selector, but ' . \count($selectors) . ' given'
             );
         }
 
-        if ($selectors[0]->getSelector() !== 'ruleset') {
-            throw new ParserException(
-                'Expecting "ruleset" selector, but "' . $selectors[0]->getSelector() . '" given'
+        if ($selectors[0]->getSelector() !== 'style') {
+            throw new CleanerException(
+                'Expecting "style" selector, but "' . $selectors[0]->getSelector() . '" given'
             );
         }
 
         return $this->parseDeclarationBlock($block);
     }
 
-    private function parseDeclarationBlock(SabberwormCssDeclarationBlock $block) : CssRuleSet
+    private function parseDeclarationBlock(SabberwormCssDeclarationBlock $block) : CssStyle
     {
         $block->expandShorthands();
-        $ruleSet = new CssRuleSet();
+        $result = new CssStyle();
 
         foreach ($block->getRules() as $rule) {
-            $ruleSet->addRule(new CssRule($rule->getRule(), $this->parseRuleValue($rule->getValue()), $rule->getIsImportant()));
+            $result->append(new CssDeclaration($rule->getRule(), $this->parseRuleValue($rule->getValue()), $rule->getIsImportant()));
         }
 
-        return $ruleSet;
+        return $result;
     }
 
     private function parseRuleValue($value) : string

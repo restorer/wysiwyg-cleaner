@@ -2,22 +2,39 @@
 
 namespace WysiwygCleaner\Html;
 
-use WysiwygCleaner\Css\CssRuleSet;
+use WysiwygCleaner\Css\CssStyle;
 
 class HtmlElement extends HtmlContainer implements HtmlNode
 {
+    const TAG_BR = 'br';
+
+    const ATTR_STYLE = 'style';
+
     private $tag;
     private $attributes = [];
     private $computedStyle;
 
-    public function __construct(string $tag)
+    public function __construct(string $tag, $attributes = null, $computedStyle = null)
     {
         $this->tag = \strtolower($tag);
+
+        if ($attributes !== null) {
+            $this->attributes = $attributes;
+        }
+
+        if ($computedStyle !== null) {
+            $this->computedStyle = $computedStyle;
+        }
     }
 
     public function getTag() : string
     {
         return $this->tag;
+    }
+
+    public function setTag(string $tag)
+    {
+        $this->tag = $tag;
     }
 
     public function getAttributes() : array
@@ -40,22 +57,26 @@ class HtmlElement extends HtmlContainer implements HtmlNode
         $this->attributes[\strtolower($name)] = $value;
     }
 
-    public function getComputedStyle() : CssRuleSet
+    public function getComputedStyle() : CssStyle
     {
-        return $this->computedStyle ?? new CssRuleSet();
+        return $this->computedStyle ?? new CssStyle();
     }
 
-    public function setComputedStyle(CssRuleSet $computedStyle)
+    public function setComputedStyle(CssStyle $computedStyle)
     {
         $this->computedStyle = $computedStyle;
     }
 
     public function prettyDump() : string
     {
-        $result = $this->tag;
+        $result = ($this->tag === '' ? '?unknown' : $this->tag);
 
         if ($this->computedStyle !== null) {
-            $result .= " { {$this->computedStyle->prettyDump()} }";
+            $computedStyleDump = $this->computedStyle->prettyDump();
+
+            if ($computedStyleDump !== '') {
+                $result .= " { {$computedStyleDump} }";
+            }
         }
 
         return trim($result . "\n" . parent::prettyDump()) . "\n";

@@ -4,22 +4,35 @@ namespace WysiwygCleaner\Css;
 
 class CssDeclaration
 {
-    private $selector;
-    private $ruleSet;
+    const PROP_DISPLAY = 'display';
 
-    public function __construct(CssSelector $selector, CssRuleSet $ruleSet)
+    const DISPLAY_BLOCK = 'block';
+    const DISPLAY_INLINE = 'inline';
+    const DISPLAY_NONE = 'none';
+
+    private $property = '';
+    private $expression = '';
+    private $important = false;
+
+    public function __construct(string $property, string $expression, bool $important = false)
     {
-        $this->selector = $selector;
-        $this->ruleSet = $ruleSet;
+        $this->property = \strtolower($property);
+        $this->expression = $expression;
+        $this->important = $important;
     }
 
-    public function getSelector() : CssSelector
+    public function getProperty() : string
     {
-        return $this->selector;
+        return $this->property;
     }
 
-    public function getRuleSet() : CssRuleSet
+    public function getExpression() : string
     {
-        return $this->ruleSet;
+        return $this->expression;
+    }
+
+    public function isImportant() : bool
+    {
+        return $this->important;
     }
 }

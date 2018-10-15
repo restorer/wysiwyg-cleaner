@@ -6,7 +6,8 @@ class Defaults
 {
     const FLATTEN_TAGS = ['b', 'em', 'i', 'small', 'span', 'strong'];
     const KEEP_ATTRIBUTES = ['id', 'class'];
-    const KEEP_SPACE_PROPERTIES = ['/background*/'];
+    const KEEP_WHITESPACE_PROPS = ['/background*/'];
+    const RECONSTRUCT_TAGS = ['strong', 'em', 'small', 'span'];
 
     const USER_AGENT_STYLESHEET = '
         /* Block (block, list-item, table...) */
