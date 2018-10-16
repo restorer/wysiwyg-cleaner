@@ -6,8 +6,11 @@ class CssDeclaration
 {
     const PROP_DISPLAY = 'display';
 
+    const EXPR_INHERIT = 'inherit';
+
     const DISPLAY_BLOCK = 'block';
     const DISPLAY_INLINE = 'inline';
+    const DISPLAY_INLINE_BLOCK = 'inline-block';
     const DISPLAY_NONE = 'none';
 
     private $property = '';
@@ -34,5 +37,10 @@ class CssDeclaration
     public function isImportant() : bool
     {
         return $this->important;
+    }
+
+    public function hasInternalExpression() : bool
+    {
+        return preg_match('/^var\(\-\-cleaner\-[0-9A-Za-z\-]+\)$/', $this->expression);
     }
 }

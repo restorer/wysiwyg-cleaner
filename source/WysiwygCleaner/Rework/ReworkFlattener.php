@@ -1,16 +1,16 @@
 <?php
 
-namespace WysiwygCleaner\Clean;
+namespace WysiwygCleaner\Rework;
 
-use WysiwygCleaner\Html\HtmlNode;
-use WysiwygCleaner\Html\HtmlText;
-use WysiwygCleaner\Html\HtmlElement;
+use WysiwygCleaner\CleanerException;
 use WysiwygCleaner\Html\HtmlContainer;
 use WysiwygCleaner\Html\HtmlDocument;
-use WysiwygCleaner\CleanerException;
+use WysiwygCleaner\Html\HtmlElement;
+use WysiwygCleaner\Html\HtmlNode;
+use WysiwygCleaner\Html\HtmlText;
 use WysiwygCleaner\TypeUtils;
 
-class Flattener
+class ReworkFlattener
 {
     private $flattenTags;
     private $keepAttributes;
@@ -21,18 +21,17 @@ class Flattener
         $this->keepAttributes = array_map('\strtolower', $keepAttributes);
     }
 
-    public function flatten(HtmlDocument $document) : HtmlDocument
+    public function flatten(HtmlDocument $document)
     {
-        $result = new HtmlDocument();
+        $children = $document->getChildren();
+        $document->setChildren([]);
 
-        foreach ($document->getChildren() as $child) {
-            $this->flattenNode($result, $child);
+        foreach ($children as $child) {
+            $this->flattenNode($document, $child);
         }
-
-        return $result;
     }
 
-    private function flattenNode(HtmlContainer $into, HtmlNode $node)
+    private function flattenNode(HtmlContainer $destination, HtmlNode $node)
     {
         if ($node instanceof HtmlElement) {
             $cleanedAttributes = [];
@@ -43,21 +42,22 @@ class Flattener
                 }
             }
 
+            // TODO: this will fail on, for example, <span style="display: block;">...</span>
             if (!in_array($node->getTag(), $this->flattenTags, true) || !empty($cleanedAttributes)) {
                 $cleanedNode = new HtmlElement($node->getTag(), $cleanedAttributes);
                 $cleanedNode->setComputedStyle($node->getComputedStyle());
 
-                $into->appendChild($cleanedNode);
-                $into = $cleanedNode;
+                $destination->appendChild($cleanedNode);
+                $destination = $cleanedNode;
             }
 
             foreach ($node->getChildren() as $child) {
-                $this->flattenNode($into, $child);
+                $this->flattenNode($destination, $child);
             }
         } elseif ($node instanceof HtmlText) {
-            $into->appendChild($node);
+            $destination->appendChild($node);
         } else {
-            throw new ParserException('Doesn\'t know what to do with node "' . TypeUtils::getClass($node) . '"');
+            throw new CleanerException('Doesn\'t know what to do with node "' . TypeUtils::getClass($node) . '"');
         }
     }
 }

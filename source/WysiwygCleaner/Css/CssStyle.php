@@ -49,6 +49,20 @@ class CssStyle
         }
     }
 
+    public function extend(CssDeclaration $declaration)
+    {
+        if ($declaration->getExpression() !== CssDeclaration::EXPR_INHERIT) {
+            $this->declarations[$declaration->getProperty()] = $declaration;
+        }
+    }
+
+    public function extendAll(CssStyle $other)
+    {
+        foreach ($other->declarations as $declaration) {
+            $this->extend($declaration);
+        }
+    }
+
     public function visuallyEquals(CssStyle $other)
     {
         foreach ($this->declarations as $declaration) {

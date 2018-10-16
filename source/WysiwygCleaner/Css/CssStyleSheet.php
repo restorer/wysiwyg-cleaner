@@ -12,6 +12,7 @@ class CssStyleSheet
 
     public function append(CssRule $rule)
     {
+        // TODO: this is incomplete stub function
         foreach ($rule->getSelectors() as $selector) {
             $elementName = $selector->getElementName();
 
@@ -25,6 +26,7 @@ class CssStyleSheet
 
     public function computeStyle(CssSelector $selector) : CssStyle
     {
+        // TODO: this is incomplete stub function
         return $this->styleMap[$selector->getElementName()] ?? new CssStyle();
     }
 }

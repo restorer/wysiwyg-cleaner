@@ -2,12 +2,12 @@
 
 namespace WysiwygCleaner\Layout;
 
+use WysiwygCleaner\CleanerException;
 use WysiwygCleaner\Css\CssDeclaration;
 use WysiwygCleaner\Html\HtmlContainer;
 use WysiwygCleaner\Html\HtmlDocument;
 use WysiwygCleaner\Html\HtmlElement;
 use WysiwygCleaner\Html\HtmlText;
-use WysiwygCleaner\CleanerException;
 use WysiwygCleaner\TypeUtils;
 
 class LayoutBuilder

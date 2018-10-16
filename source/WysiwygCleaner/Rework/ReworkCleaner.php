@@ -1,7 +1,8 @@
 <?php
 
-namespace WysiwygCleaner\Clean;
+namespace WysiwygCleaner\Rework;
 
+use WysiwygCleaner\CleanerException;
 use WysiwygCleaner\Css\CssDeclaration;
 use WysiwygCleaner\Css\CssStyle;
 use WysiwygCleaner\Html\HtmlContainer;
@@ -10,13 +11,13 @@ use WysiwygCleaner\Html\HtmlNode;
 use WysiwygCleaner\Html\HtmlText;
 use WysiwygCleaner\TypeUtils;
 
-class Cleanuper
+class ReworkCleaner
 {
-    private $keepProperties;
+    private $keepWhitespaceProperties;
 
-    public function __construct(array $keepProperties)
+    public function __construct(array $keepWhitespaceProperties)
     {
-        $this->keepProperties = $keepProperties;
+        $this->keepWhitespaceProperties = $keepWhitespaceProperties;
     }
 
     public function cleanup(HtmlContainer $container)
@@ -41,11 +42,11 @@ class Cleanuper
                 }
             } elseif ($node instanceof HtmlText) {
                 if (!preg_match('/^([ \t\n\r]*+)?(.*?)([ \t\n\r]*)$/', $node->getText(), $mt)) {
-                    throw new ParserException('Internal error: regexp failed');
+                    throw new CleanerException('Internal error: regexp failed');
                 }
 
                 $whitespaceStyle = ($mt[1] !== '' || $mt[3] !== '')
-                    ? $whitespaceStyle = $this->cleanupWhitespaceStyle($node->getComputedStyle())
+                    ? $this->cleanupWhitespaceStyle($node->getComputedStyle())
                     : null;
 
                 if ($mt[1] !== '') {
@@ -60,7 +61,7 @@ class Cleanuper
                     $children[] = new HtmlText(' ', $whitespaceStyle);
                 }
             } else {
-                throw new ParserException('Doesn\'t know what to do with child "' . TypeUtils::getClass($child) . '"');
+                throw new CleanerException('Doesn\'t know what to do with child "' . TypeUtils::getClass($child) . '"');
             }
         }
 
@@ -76,15 +77,26 @@ class Cleanuper
             $child = $children[$i];
             $nextChild = $children[$i + 1];
 
-            if (($child instanceof HtmlText)
-                && ($nextChild instanceof HtmlText)
-                && $child->getComputedStyle()->visuallyEquals($nextChild->getComputedStyle())
+            if (!($child instanceof HtmlText) || !($nextChild instanceof HtmlText)) {
+                $i++;
+                continue;
+            }
+
+            if ($this->isStrippableSpace($child)) {
+                $nextChild->prependText($child->getText());
+                array_splice($children, $i, 1);
+                continue;
+            }
+
+            if ($this->isStrippableSpace($nextChild)
+                || $child->getComputedStyle()->visuallyEquals($nextChild->getComputedStyle())
             ) {
                 $child->appendText($nextChild->getText());
                 array_splice($children, $i + 1, 1);
-            } else {
-                $i++;
+                continue;
             }
+
+            $i++;
         }
 
         return $children;
@@ -138,8 +150,18 @@ class Cleanuper
         $result = new CssStyle();
 
         foreach ($style->getDeclarations() as $declaration) {
-            if ($this->shouldKeepDeclaration($declaration)) {
+            $property = $declaration->getProperty();
+
+            if ($property === CssDeclaration::PROP_DISPLAY) {
                 $result->append($declaration);
+                continue;
+            }
+
+            foreach ($this->keepWhitespaceProperties as $regexp) {
+                if (preg_match($regexp, $property)) {
+                    $result->append($declaration);
+                    break;
+                }
             }
         }
 
@@ -150,7 +172,7 @@ class Cleanuper
     {
         return (($node instanceof HtmlText)
             && ($node->getText() === ' ')
-            && !$this->shouldKeepStyle($node->getComputedStyle(), CssDeclaration::DISPLAY_INLINE)
+            && !$this->shouldKeepStyle($node->getComputedStyle())
         );
     }
 
@@ -158,40 +180,23 @@ class Cleanuper
     {
         return (($node instanceof HtmlElement)
             && ($node->getTag() === HtmlElement::TAG_BR)
-            && !$this->shouldKeepStyle($node->getComputedStyle(), CssDeclaration::DISPLAY_BLOCK)
+            && !$this->shouldKeepStyle($node->getComputedStyle())
         );
     }
 
-    private function shouldKeepStyle(CssStyle $style, string $displayExpression) : bool
+    private function shouldKeepStyle(CssStyle $style) : bool
     {
         foreach ($style->getDeclarations() as $declaration) {
             $property = $declaration->getProperty();
 
-            if ($property === CssDeclaration::PROP_DISPLAY || $declaration->getExpression() === $displayExpression) {
+            if ($property === CssDeclaration::PROP_DISPLAY && $declaration->getExpression() === CssDeclaration::DISPLAY_INLINE) {
                 continue;
             }
 
-            foreach ($this->keepProperties as $regexp) {
+            foreach ($this->keepWhitespaceProperties as $regexp) {
                 if (preg_match($regexp, $property)) {
                     return true;
                 }
-            }
-        }
-
-        return false;
-    }
-
-    private function shouldKeepDeclaration(CssDeclaration $declaration) : bool
-    {
-        $property = $declaration->getProperty();
-
-        if ($property === CssDeclaration::PROP_DISPLAY) {
-            return true;
-        }
-
-        foreach ($this->keepProperties as $regexp) {
-            if (preg_match($regexp, $property)) {
-                return true;
             }
         }
 

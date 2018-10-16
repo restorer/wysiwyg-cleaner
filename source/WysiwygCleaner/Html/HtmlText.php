@@ -28,6 +28,11 @@ class HtmlText implements HtmlNode
         $this->text = $text;
     }
 
+    public function prependText(string $text)
+    {
+        $this->text = $text . $this->text;
+    }
+
     public function appendText(string $text)
     {
         $this->text .= $text;

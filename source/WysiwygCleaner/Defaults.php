@@ -7,16 +7,15 @@ class Defaults
     const FLATTEN_TAGS = ['b', 'em', 'i', 'small', 'span', 'strong'];
     const KEEP_ATTRIBUTES = ['id', 'class'];
     const KEEP_WHITESPACE_PROPS = ['/background*/'];
-    const RECONSTRUCT_TAGS = ['strong', 'em', 'small', 'span'];
+    const PREFERRABLE_TAGS = ['strong', 'em', 'small', 'span'];
 
     const USER_AGENT_STYLESHEET = '
-        /* Block (block, list-item, table...) */
+        /* Block (block, list-item, table, etc.) */
 
         address { display: block; font-style: italic; }
         article { display: block; }
         aside { display: block; }
         blockquote { display: block; }
-        br { display: block; /* actually inline, but we treat it as block to simplify cleaning */ }
         caption { display: table-caption; }
         col { display: table-column; }
         colgroup { display: table-column-group; }
@@ -54,24 +53,22 @@ class Defaults
         tr { display: table-row; }
         ul { display: block; }
 
-        /* Inline-Block (several tags are actually inline, but we treat it as inline-block to avoid unnecessary merging) */
+        /* Inline-Block */
 
         button { display: inline-block; }
         input { display: inline-block; }
-        q { display: inline-block; /* actually inline */ }
         select { display: inline-block; }
-        sub { display: inline; font-size: smaller; /* actually inline */ }
-        sup { display: inline; font-size: smaller; /* actually inline */ }
         textarea { display: inline-block; }
 
         /* Inline */
 
-        a { display: inline; color: var(--link-color); /* Usually "a" has some color, we use css variable, to avoid unnecessary merging */ }
+        a { display: inline; color: var(--cleaner-link); }
         abbr { display: inline; }
         acronym { display: inline; }
         b { display: inline; font-weight: bold; }
         bdo { display: inline; }
         big { display: inline; font-size: larger; }
+        br { display: inline; }
         canvas { display: inline; }
         cite { display: inline; font-style: italic; }
         code { display: inline; font-family: monospace; }
@@ -84,10 +81,13 @@ class Defaults
         map { display: inline; }
         object { display: inline; }
         output { display: inline; }
+        q { display: inline; }
         samp { display: inline; font-family: monospace; }
         small { display: inline; font-size: smaller; }
         span { display: inline; }
         strong { display: inline; font-weight: bold; }
+        sub { display: inline; font-size: smaller; }
+        sup { display: inline; font-size: smaller; }
         time { display: inline; }
         tt { display: inline; font-family: monospace; }
         var { display: inline; font-style: italic; }
