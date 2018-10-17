@@ -2,62 +2,94 @@
 
 namespace WysiwygCleaner\Layout;
 
+use WysiwygCleaner\CleanerUtils;
 use WysiwygCleaner\Html\HtmlElement;
 
 class LayoutBox implements LayoutElement
 {
+    /** @var bool */
     private $blockContext;
+
+    /** @var HtmlElement|null */
     private $htmlElement;
+
+    /** @var LayoutElement[] */
     private $children = [];
 
+    /**
+     * @param bool $blockContext
+     * @param null $htmlElement
+     */
     public function __construct(bool $blockContext, $htmlElement = null)
     {
         $this->blockContext = $blockContext;
         $this->htmlElement = $htmlElement;
     }
 
+    /**
+     * @return bool
+     */
     public function isBlock() : bool
     {
         return $this->blockContext;
     }
 
+    /**
+     * @return bool
+     */
     public function isInline() : bool
     {
         return !$this->blockContext;
     }
 
+    /**
+     * @return bool
+     */
     public function isAnonymous() : bool
     {
         return ($this->htmlElement === null);
     }
 
+    /**
+     * @return HtmlElement
+     */
     public function getHtmlElement() : HtmlElement
     {
         return $this->htmlElement ?? new HtmlElement('');
     }
 
+    /**
+     * @return LayoutElement[]
+     */
     public function getChildren() : array
     {
         return $this->children;
     }
 
+    /**
+     * @param LayoutElement $child
+     */
     public function appendChild(LayoutElement $child)
     {
         $this->children[] = $child;
     }
 
+    /**
+     * @return LayoutBox
+     */
     public function getBlockContainer() : LayoutBox
     {
         if (!$this->blockContext) {
+            /** @noinspection NotOptimalIfConditionsInspection */
             if (!empty($this->children)) {
                 $this->wrapChildren(true);
             }
 
             $this->blockContext = true;
-        } else if (!empty($this->children)) {
+        } elseif (!empty($this->children)) {
             $child = end($this->children);
 
-            if (!($child instanceof LayoutBox) || !$child->blockContext) {
+            if (!($child instanceof self) || !$child->blockContext) {
                 $this->wrapChildren(true);
             }
         }
@@ -65,6 +97,9 @@ class LayoutBox implements LayoutElement
         return $this;
     }
 
+    /**
+     * @return LayoutBox
+     */
     public function getInlineContainer() : LayoutBox
     {
         if (empty($this->children)) {
@@ -73,7 +108,7 @@ class LayoutBox implements LayoutElement
 
         $child = end($this->children);
 
-        if (!$this->blockContext || !($child instanceof LayoutBox) || !$child->blockContext) {
+        if (!$this->blockContext || !($child instanceof self) || !$child->blockContext) {
             return $this;
         }
 
@@ -85,42 +120,41 @@ class LayoutBox implements LayoutElement
         return $child;
     }
 
-    public function prettyDump() : string
+    /**
+     * @param string $indent
+     *
+     * @return string
+     */
+    public function dump(string $indent = '') : string
     {
-        $childrenDump = implode(
-            "\n",
-            array_map(
-                function (LayoutElement $child) {
-                    return trim($child->prettyDump());
-                },
-                $this->children
-            )
-        );
-
-        $childrenDump = implode(
-            "\n",
-            array_map(
-                function (string $line) {
-                    return "    {$line}";
-                },
-                explode("\n", $childrenDump)
-            )
-        );
-
         $result = ($this->blockContext ? '#block' : '#inline') . '-box';
 
         if ($this->htmlElement !== null) {
             $result .= ' : ' . $this->htmlElement->getTag();
-            $computedStyleDump = $this->htmlElement->getComputedStyle()->prettyDump();
+            $computedStyleDump = $this->htmlElement->getComputedStyle()->dump();
 
             if ($computedStyleDump !== '') {
-                $result .= " { {$computedStyleDump} }";
+                $result .= ' { ' . $computedStyleDump . ' }';
             }
         }
 
-        return trim("{$result}\n{$childrenDump}") . "\n";
+        return $indent
+            . $result
+            . "\n"
+            . implode(
+                '',
+                array_map(
+                    function (LayoutElement $child) use ($indent) : string {
+                        return $child->dump($indent . CleanerUtils::INDENT);
+                    },
+                    $this->children
+                )
+            );
     }
 
+    /**
+     * @param bool $blockContext
+     */
     private function wrapChildren(bool $blockContext)
     {
         $wrapper = new LayoutBox($blockContext);

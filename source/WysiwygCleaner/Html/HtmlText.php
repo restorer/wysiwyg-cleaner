@@ -2,13 +2,21 @@
 
 namespace WysiwygCleaner\Html;
 
+use WysiwygCleaner\CleanerUtils;
 use WysiwygCleaner\Css\CssStyle;
 
 class HtmlText implements HtmlNode
 {
+    /** @var string */
     private $text;
+
+    /** @var CssStyle|null */
     private $computedStyle;
 
+    /**
+     * @param string $text
+     * @param CssStyle|null $computedStyle
+     */
     public function __construct(string $text, $computedStyle = null)
     {
         $this->text = $text;
@@ -18,48 +26,73 @@ class HtmlText implements HtmlNode
         }
     }
 
+    /**
+     * @return string
+     */
     public function getText() : string
     {
         return $this->text;
     }
 
+    /**
+     * @param string $text
+     */
     public function setText(string $text)
     {
         $this->text = $text;
     }
 
+    /**
+     * @param string $text
+     */
     public function prependText(string $text)
     {
         $this->text = $text . $this->text;
     }
 
+    /**
+     * @param string $text
+     */
     public function appendText(string $text)
     {
         $this->text .= $text;
     }
 
+    /**
+     * @return CssStyle
+     */
     public function getComputedStyle() : CssStyle
     {
         return $this->computedStyle ?? new CssStyle();
     }
 
+    /**
+     * @param CssStyle $computedStyle
+     *
+     * @return mixed|void
+     */
     public function setComputedStyle(CssStyle $computedStyle)
     {
         $this->computedStyle = $computedStyle;
     }
 
-    public function prettyDump() : string
+    /**
+     * @param string $indent
+     *
+     * @return string
+     */
+    public function dump(string $indent = '') : string
     {
-        $result = '#text "' . addcslashes($this->text, "\n\r\t\f\v\"\\") . '"';
+        $result = '#text ' . CleanerUtils::dumpText($this->text);
 
         if ($this->computedStyle !== null) {
-            $computedStyleDump = $this->computedStyle->prettyDump();
+            $computedStyleDump = $this->computedStyle->dump();
 
             if ($computedStyleDump !== '') {
-                $result .= " { {$computedStyleDump} }";
+                $result .= ' { ' . $computedStyleDump . ' }';
             }
         }
 
-        return "{$result}\n";
+        return $indent . $result . "\n";
     }
 }

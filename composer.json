@@ -1,5 +1,11 @@
 {
     "require": {
-        "sabberworm/php-css-parser": "8.2.0"
+        "sabberworm/php-css-parser": "8.2.0",
+        "ext-mbstring": "*",
+        "ext-libxml": "*",
+        "ext-dom": "*"
+    },
+    "require-dev": {
+        "roave/security-advisories": "dev-master"
     }
 }

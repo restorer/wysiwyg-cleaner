@@ -4,28 +4,38 @@ namespace WysiwygCleaner\Css;
 
 use Sabberworm\CSS\OutputFormat as SabberwormCssOutputFormat;
 use Sabberworm\CSS\Parser as SabberwormCssParser;
-use Sabberworm\CSS\RuleSet\DeclarationBlock as SabberwormCssDeclarationBlock;
+use Sabberworm\CSS\Property\Selector as SabberwormSelector;
 use Sabberworm\CSS\Rule\Rule as SabberwormCssRule;
+use Sabberworm\CSS\RuleSet\DeclarationBlock as SabberwormCssDeclarationBlock;
 use Sabberworm\CSS\Value\Value as SabberwormCssValue;
 use WysiwygCleaner\CleanerException;
-use WysiwygCleaner\TypeUtils;
+use WysiwygCleaner\CleanerUtils;
 
-class CssPrinter
+class CssRenderer
 {
+    /** @var SabberwormCssOutputFormat */
     private $outputFormat;
 
+    /**
+     */
     public function __construct()
     {
         $this->outputFormat = new SabberwormCssOutputFormat();
     }
 
-    public function printStyle(CssStyle $style) : string
+    /**
+     * @param CssStyle $style
+     *
+     * @return string
+     * @throws CleanerException
+     */
+    public function renderStyle(CssStyle $style) : string
     {
         $declarations = [];
 
-        foreach ($style->getDeclarations() as $declaration) {
-            if (!$declaration->hasInternalExpression()) {
-                $declarations[] = $declaration->getProperty() . ':' . $declaration->getExpression();
+        foreach ($style->getDeclarations() as $property => $declaration) {
+            if (!$declaration->isInternalDeclaration()) {
+                $declarations[] = $property . ':' . $declaration->getExpression();
             }
         }
 
@@ -45,10 +55,11 @@ class CssPrinter
 
         if (!($block instanceof SabberwormCssDeclarationBlock)) {
             throw new CleanerException(
-                'Expecting DeclarationBlock, but "' . TypeUtils::getClass($declarationBlock) . '" given'
+                'Expecting DeclarationBlock, but "' . CleanerUtils::getClass($block) . '" given'
             );
         }
 
+        /** @var SabberwormSelector[] $selectors */
         $selectors = $block->getSelectors();
 
         if (\count($selectors) !== 1) {
@@ -68,16 +79,20 @@ class CssPrinter
         return implode(
             ' ',
             array_map(
-                function (SabberwormCssRule $rule) {
-                    return $rule->getRule() . ': ' . $this->printRuleValue($rule->getValue()) . ';';
+                function (SabberwormCssRule $rule) : string {
+                    return $rule->getRule() . ': ' . $this->renderRuleValue($rule->getValue()) . ';';
                 },
                 $block->getRules()
             )
         );
-        return $block->render($this->outputFormat);
     }
 
-    private function printRuleValue($value) : string
+    /**
+     * @param $value
+     *
+     * @return string
+     */
+    private function renderRuleValue($value) : string
     {
         return ($value instanceof SabberwormCssValue) ? $value->render($this->outputFormat) : (string)$value;
     }

@@ -8,15 +8,23 @@ class CssDeclaration
 
     const EXPR_INHERIT = 'inherit';
 
-    const DISPLAY_BLOCK = 'block';
-    const DISPLAY_INLINE = 'inline';
-    const DISPLAY_INLINE_BLOCK = 'inline-block';
     const DISPLAY_NONE = 'none';
+    const DISPLAY_INLINE = 'inline';
 
-    private $property = '';
-    private $expression = '';
-    private $important = false;
+    /** @var string */
+    private $property;
 
+    /** @var string */
+    private $expression;
+
+    /** @var bool */
+    private $important;
+
+    /**
+     * @param string $property
+     * @param string $expression
+     * @param bool $important
+     */
     public function __construct(string $property, string $expression, bool $important = false)
     {
         $this->property = \strtolower($property);
@@ -24,22 +32,34 @@ class CssDeclaration
         $this->important = $important;
     }
 
+    /**
+     * @return string
+     */
     public function getProperty() : string
     {
         return $this->property;
     }
 
+    /**
+     * @return string
+     */
     public function getExpression() : string
     {
         return $this->expression;
     }
 
+    /**
+     * @return bool
+     */
     public function isImportant() : bool
     {
         return $this->important;
     }
 
-    public function hasInternalExpression() : bool
+    /**
+     * @return bool
+     */
+    public function isInternalDeclaration() : bool
     {
         return preg_match('/^var\(\-\-cleaner\-[0-9A-Za-z\-]+\)$/', $this->expression);
     }

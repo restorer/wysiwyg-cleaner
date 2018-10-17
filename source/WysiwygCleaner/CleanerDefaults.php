@@ -2,12 +2,12 @@
 
 namespace WysiwygCleaner;
 
-class Defaults
+class CleanerDefaults
 {
-    const FLATTEN_TAGS = ['b', 'em', 'i', 'small', 'span', 'strong'];
-    const KEEP_ATTRIBUTES = ['id', 'class'];
+    const FLATTEN_INLINE_TAGS = ['b', 'em', 'i', 'small', 'span', 'strong'];
+    const KEEP_ATTRIBUTES = ['id', 'class', 'href', '_target', 'src', 'alt', 'width', 'height'];
     const KEEP_WHITESPACE_PROPS = ['/background*/'];
-    const PREFERRABLE_TAGS = ['strong', 'em', 'small', 'span'];
+    const PREFERABLE_TAGS = ['strong', 'em', 'small', 'span'];
 
     const USER_AGENT_STYLESHEET = '
         /* Block (block, list-item, table, etc.) */
@@ -62,7 +62,7 @@ class Defaults
 
         /* Inline */
 
-        a { display: inline; color: var(--cleaner-link); }
+        a { display: inline; color: var(--cleaner-a-color); }
         abbr { display: inline; }
         acronym { display: inline; }
         b { display: inline; font-weight: bold; }
@@ -95,6 +95,6 @@ class Defaults
 
         /* None */
 
-        script { display: none; }
+        script { display: var(--cleaner-script-display); }
     ';
 }

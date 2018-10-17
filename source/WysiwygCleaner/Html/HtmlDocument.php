@@ -2,14 +2,17 @@
 
 namespace WysiwygCleaner\Html;
 
+use WysiwygCleaner\CleanerUtils;
+
 class HtmlDocument extends HtmlContainer
 {
-    public function __construct()
+    /**
+     * @param string $indent
+     *
+     * @return string
+     */
+    public function dump(string $indent = '') : string
     {
-    }
-
-    public function prettyDump() : string
-    {
-        return trim("#document\n" . parent::prettyDump()) . "\n";
+        return "{$indent}#document\n" . parent::dump($indent . CleanerUtils::INDENT);
     }
 }

@@ -2,17 +2,19 @@
 
 namespace WysiwygCleaner\Css;
 
+/**
+ * TODO: this is incomplete stub class
+ */
 class CssStyleSheet
 {
+    /** @var array<string, CssRule> */
     private $styleMap = [];
 
-    public function __construct()
-    {
-    }
-
+    /**
+     * @param CssRule $rule
+     */
     public function append(CssRule $rule)
     {
-        // TODO: this is incomplete stub function
         foreach ($rule->getSelectors() as $selector) {
             $elementName = $selector->getElementName();
 
@@ -24,9 +26,13 @@ class CssStyleSheet
         }
     }
 
-    public function computeStyle(CssSelector $selector) : CssStyle
+    /**
+     * @param CssSelector $selector
+     *
+     * @return CssStyle
+     */
+    public function resolveStyle(CssSelector $selector) : CssStyle
     {
-        // TODO: this is incomplete stub function
         return $this->styleMap[$selector->getElementName()] ?? new CssStyle();
     }
 }

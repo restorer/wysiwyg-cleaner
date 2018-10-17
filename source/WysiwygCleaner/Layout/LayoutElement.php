@@ -4,5 +4,10 @@ namespace WysiwygCleaner\Layout;
 
 interface LayoutElement
 {
-    public function prettyDump() : string;
+    /**
+     * @param string $indent
+     *
+     * @return string
+     */
+    public function dump(string $indent = '') : string;
 }

@@ -3,24 +3,36 @@
 namespace WysiwygCleaner\Rework;
 
 use WysiwygCleaner\CleanerException;
+use WysiwygCleaner\CleanerUtils;
 use WysiwygCleaner\Html\HtmlContainer;
 use WysiwygCleaner\Html\HtmlDocument;
 use WysiwygCleaner\Html\HtmlElement;
 use WysiwygCleaner\Html\HtmlNode;
 use WysiwygCleaner\Html\HtmlText;
-use WysiwygCleaner\TypeUtils;
 
 class ReworkFlattener
 {
-    private $flattenTags;
+    /** @var string[] */
+    private $flattenInlineTags;
+
+    /** @var string[] */
     private $keepAttributes;
 
-    public function __construct(array $flattenTags, array $keepAttributes)
+    /**
+     * @param array $flattenInlineTags
+     * @param array $keepAttributes
+     */
+    public function __construct(array $flattenInlineTags, array $keepAttributes)
     {
-        $this->flattenTags = array_map('\strtolower', $flattenTags);
+        $this->flattenInlineTags = array_map('\strtolower', $flattenInlineTags);
         $this->keepAttributes = array_map('\strtolower', $keepAttributes);
     }
 
+    /**
+     * @param HtmlDocument $document
+     *
+     * @throws CleanerException
+     */
     public function flatten(HtmlDocument $document)
     {
         $children = $document->getChildren();
@@ -31,19 +43,24 @@ class ReworkFlattener
         }
     }
 
+    /**
+     * @param HtmlContainer $destination
+     * @param HtmlNode $node
+     *
+     * @throws CleanerException
+     */
     private function flattenNode(HtmlContainer $destination, HtmlNode $node)
     {
         if ($node instanceof HtmlElement) {
             $cleanedAttributes = [];
 
             foreach ($node->getAttributes() as $name => $value) {
-                if (in_array($name, $this->keepAttributes, true)) {
+                if (\in_array($name, $this->keepAttributes, true)) {
                     $cleanedAttributes[$name] = $value;
                 }
             }
 
-            // TODO: this will fail on, for example, <span style="display: block;">...</span>
-            if (!in_array($node->getTag(), $this->flattenTags, true) || !empty($cleanedAttributes)) {
+            if (!empty($cleanedAttributes) || !$this->canFlattenInlineElement($node)) {
                 $cleanedNode = new HtmlElement($node->getTag(), $cleanedAttributes);
                 $cleanedNode->setComputedStyle($node->getComputedStyle());
 
@@ -57,7 +74,18 @@ class ReworkFlattener
         } elseif ($node instanceof HtmlText) {
             $destination->appendChild($node);
         } else {
-            throw new CleanerException('Doesn\'t know what to do with node "' . TypeUtils::getClass($node) . '"');
+            throw new CleanerException('Doesn\'t know what to do with node "' . CleanerUtils::getClass($node) . '"');
         }
+    }
+
+    /**
+     * @param HtmlElement $element
+     *
+     * @return bool
+     */
+    private function canFlattenInlineElement(HtmlElement $element) : bool
+    {
+        return \in_array($element->getTag(), $this->flattenInlineTags, true)
+            && CleanerUtils::isInlineDisplay($element->getComputedStyle()->getDisplay());
     }
 }

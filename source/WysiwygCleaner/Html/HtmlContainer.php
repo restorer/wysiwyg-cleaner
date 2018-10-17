@@ -4,42 +4,47 @@ namespace WysiwygCleaner\Html;
 
 abstract class HtmlContainer
 {
+    /** @var HtmlNode[] */
     protected $children = [];
 
+    /**
+     * @return HtmlNode[]
+     */
     public function getChildren() : array
     {
         return $this->children;
     }
 
+    /**
+     * @param HtmlNode[] $children
+     */
     public function setChildren(array $children)
     {
         $this->children = $children;
     }
 
+    /**
+     * @param HtmlNode $child
+     */
     public function appendChild(HtmlNode $child)
     {
         $this->children[] = $child;
     }
 
-    public function prettyDump() : string
+    /**
+     * @param string $indent
+     *
+     * @return string
+     */
+    public function dump(string $indent = '') : string
     {
-        $childrenDump = implode(
-            "\n",
+        return implode(
+            '',
             array_map(
-                function (HtmlNode $child) {
-                    return trim($child->prettyDump());
+                function (HtmlNode $child) use ($indent) : string {
+                    return $child->dump($indent);
                 },
                 $this->children
-            )
-        );
-
-        return implode(
-            "\n",
-            array_map(
-                function (string $line) {
-                    return "    {$line}";
-                },
-                explode("\n", $childrenDump)
             )
         );
     }

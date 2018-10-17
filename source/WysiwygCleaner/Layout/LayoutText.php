@@ -2,38 +2,57 @@
 
 namespace WysiwygCleaner\Layout;
 
+use WysiwygCleaner\CleanerUtils;
 use WysiwygCleaner\Css\CssStyle;
 
 class LayoutText implements LayoutElement
 {
+    /** @var string */
     private $text;
+
+    /** @var CssStyle */
     private $computedStyle;
 
+    /**
+     * @param string $text
+     * @param CssStyle $computedStyle
+     */
     public function __construct(string $text, CssStyle $computedStyle)
     {
         $this->text = $text;
         $this->computedStyle = $computedStyle;
     }
 
+    /**
+     * @return string
+     */
     public function getText() : string
     {
         return $this->text;
     }
 
+    /**
+     * @return CssStyle
+     */
     public function getComputedStyle() : CssStyle
     {
         return $this->computedStyle;
     }
 
-    public function prettyDump() : string
+    /**
+     * @param string $indent
+     *
+     * @return string
+     */
+    public function dump(string $indent = '') : string
     {
-        $result = '#inline-text "' . addcslashes($this->text, "\n\r\t\f\v\"\\") . '"';
-        $computedStyleDump = $this->htmlElement->getComputedStyle()->prettyDump();
+        $result = '#inline-text ' . CleanerUtils::dumpText($this->text);
+        $computedStyleDump = $this->getComputedStyle()->dump();
 
         if ($computedStyleDump !== '') {
-            $result .= " { {$computedStyleDump} }";
+            $result .= ' { ' . $computedStyleDump . ' }';
         }
 
-        return "{$result}\n";
+        return $indent . $result . "\n";
     }
 }
