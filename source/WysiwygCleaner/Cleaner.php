@@ -51,7 +51,10 @@ class Cleaner
             CleanerDefaults::KEEP_ATTRIBUTES
         );
 
-        $this->reworkCleaner = new ReworkCleaner(CleanerDefaults::KEEP_WHITESPACE_PROPS);
+        $this->reworkCleaner = new ReworkCleaner(
+            CleanerDefaults::KEEP_WHITESPACE_PROPS,
+            CleanerDefaults::REMOVE_EMPTY_TAGS
+        );
 
         $this->reworkReconstructor = new ReworkReconstructor(
             CleanerDefaults::PREFERABLE_TAGS,

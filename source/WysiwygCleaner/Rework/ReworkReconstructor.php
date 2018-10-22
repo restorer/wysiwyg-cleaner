@@ -180,7 +180,10 @@ class ReworkReconstructor
         $children = [];
         $elementsStack = [];
 
-        foreach ($container->getChildren() as $child) {
+        /** @noinspection ForeachInvariantsInspection */
+        for ($i = 0, $len = \count($container->getChildren()); $i < $len; $i++) {
+            $child = $container->getChildren()[$i];
+
             $isStrippableLineBreak = CleanerUtils::isStrippableLineBreak(
                 $child,
                 $this->keepWhitespacePropertiesRexegps
@@ -194,6 +197,18 @@ class ReworkReconstructor
                 $children[] = $child;
                 $elementsStack = [];
                 continue;
+            }
+
+            if ($isStrippableLineBreak) {
+                $prevChild = ($i > 0 ? $container->getChildren()[$i - 1] : null);
+                $nextChild = ($i + 1 < $len ? $container->getChildren()[$i + 1] : null);
+
+                if (!($prevChild instanceof HtmlText)
+                    || !($nextChild instanceof HtmlText)
+                    || $prevChild->getComputedStyle()->compareProperties($nextChild->getComputedStyle()) < 0
+                ) {
+                    $isStrippableLineBreak = false;
+                }
             }
 
             /** @var HtmlElement|null $intoElement */

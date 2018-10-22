@@ -16,12 +16,17 @@ class ReworkCleaner
     /** @var string[] */
     private $keepWhitespacePropertiesRexegps;
 
+    /** @var string[] */
+    private $removeEmptyTags;
+
     /**
      * @param array $keepWhitespacePropertiesRegexps
+     * @param array $removeEmptyTags
      */
-    public function __construct(array $keepWhitespacePropertiesRegexps)
+    public function __construct(array $keepWhitespacePropertiesRegexps, array $removeEmptyTags)
     {
         $this->keepWhitespacePropertiesRexegps = $keepWhitespacePropertiesRegexps;
+        $this->removeEmptyTags = \array_map('\strtolower', $removeEmptyTags);
     }
 
     /**
@@ -83,6 +88,7 @@ class ReworkCleaner
         $children = $this->stripWhitespaces($children);
         $children = $this->mergeWhitespaces($children);
         $children = $this->mergeTextNodes($children);
+        $children = $this->removeEmptyChildren($children);
 
         $container->setChildren($children);
     }
@@ -108,6 +114,32 @@ class ReworkCleaner
         );
 
         return preg_replace('/[ ]{2,}/', ' ', $text);
+    }
+
+    /**
+     * @param HtmlNode[] $children
+     *
+     * @return HtmlNode[]
+     */
+    private function removeEmptyChildren(array $children) : array
+    {
+        return \array_values(
+            \array_filter(
+                $children,
+                function (HtmlNode $child) {
+                    return (
+                        !($child instanceof HtmlElement)
+                        || !empty($child->getAttributes())
+                        || !empty($child->getChildren())
+                        || !\in_array(
+                            $child->getTag(),
+                            $this->removeEmptyTags,
+                            true
+                        )
+                    );
+                }
+            )
+        );
     }
 
     /**
@@ -168,21 +200,11 @@ class ReworkCleaner
                 continue;
             }
 
-            $prevMergeFactor = $this->computeWhitespaceMergeFactor($child->getComputedStyle(), $prevChild);
-            $nextMergeFactor = $this->computeWhitespaceMergeFactor($child->getComputedStyle(), $nextChild);
-
-            if ($prevMergeFactor >= 0 && ($nextMergeFactor < 0 || $prevMergeFactor <= $nextMergeFactor)) {
-                /** @var HtmlText $prevChild */
-
+            if (($prevChild instanceof HtmlText)
+                && ($nextChild instanceof HtmlText)
+                && $prevChild->getComputedStyle()->compareProperties($nextChild->getComputedStyle()) >= 0
+            ) {
                 $prevChild->appendText($child->getText());
-                array_splice($children, $i, 1);
-                continue;
-            }
-
-            if ($nextMergeFactor >= 0) {
-                /** @var HtmlText $nextChild */
-
-                $nextChild->prependText($child->getText());
                 array_splice($children, $i, 1);
                 continue;
             }
@@ -201,36 +223,6 @@ class ReworkCleaner
     private function isBlockyElement($node) : bool
     {
         return ($node instanceof HtmlElement) && CleanerUtils::isBlockyDisplay($node->getComputedStyle()->getDisplay());
-    }
-
-    /**
-     * @param CssStyle $whitespaceStyle
-     * @param HtmlNode|null $node
-     *
-     * @return int
-     */
-    private function computeWhitespaceMergeFactor(CssStyle $whitespaceStyle, $node) : int
-    {
-        if (!($node instanceof HtmlText)) {
-            return -1;
-        }
-
-        $nodeStyle = $node->getComputedStyle();
-
-        if (!CleanerUtils::isInlineDisplay($nodeStyle->getDisplay())) {
-            return -1;
-        }
-
-
-        foreach ($whitespaceStyle->getDeclarations() as $property => $declaration) {
-            if (!$nodeStyle->hasProperty($property)
-                || $declaration->getExpression() !== $nodeStyle->getExpression($property)
-            ) {
-                return -1;
-            }
-        }
-
-        return $whitespaceStyle->compareProperties($nodeStyle);
     }
 
     /**

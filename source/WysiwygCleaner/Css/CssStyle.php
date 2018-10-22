@@ -133,8 +133,15 @@ class CssStyle
      */
     public function compareProperties(CssStyle $other) : int
     {
+        /**
+         * @var string $property
+         * @var CssDeclaration $declaration
+         */
+
         foreach ($this->declarations as $property => $declaration) {
-            if (!$other->hasProperty($property)) {
+            if (!$other->hasProperty($property)
+                || $declaration->getExpression() !== $other->declarations[$property]->getExpression()
+            ) {
                 return -1;
             }
         }

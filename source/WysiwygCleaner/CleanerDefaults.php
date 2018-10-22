@@ -5,6 +5,7 @@ namespace WysiwygCleaner;
 class CleanerDefaults
 {
     const FLATTEN_INLINE_TAGS = ['b', 'em', 'i', 'small', 'span', 'strong'];
+    const REMOVE_EMPTY_TAGS = ['p', 'div'];
     const KEEP_ATTRIBUTES = ['id', 'class', 'href', '_target', 'src', 'alt', 'width', 'height'];
     const KEEP_WHITESPACE_PROPS = ['/background*/'];
     const PREFERABLE_TAGS = ['strong', 'em', 'small', 'span'];
