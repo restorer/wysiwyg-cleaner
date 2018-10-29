@@ -68,8 +68,6 @@ class HtmlText implements HtmlNode
 
     /**
      * @param CssStyle $computedStyle
-     *
-     * @return mixed|void
      */
     public function setComputedStyle(CssStyle $computedStyle)
     {

@@ -32,9 +32,15 @@ class Cleaner
     private $htmlRenderer;
 
     /**
+     * @param array $removeClassesRegexps
+     * @param array $removeStylesRegexps
+     * @param array $removeIdsRegexps
      */
-    public function __construct()
-    {
+    public function __construct(
+        array $removeClassesRegexps = [],
+        array $removeStylesRegexps = [],
+        array $removeIdsRegexps = []
+    ) {
         $cssParser = new CssParser();
 
         try {
@@ -48,12 +54,16 @@ class Cleaner
 
         $this->reworkFlattener = new ReworkFlattener(
             CleanerDefaults::FLATTEN_INLINE_TAGS,
+            \array_merge(CleanerDefaults::REMOVE_IDS, $removeIdsRegexps),
+            \array_merge(CleanerDefaults::REMOVE_CLASSES, $removeClassesRegexps),
             CleanerDefaults::KEEP_ATTRIBUTES
         );
 
         $this->reworkCleaner = new ReworkCleaner(
             CleanerDefaults::KEEP_WHITESPACE_PROPS,
-            CleanerDefaults::REMOVE_EMPTY_TAGS
+            CleanerDefaults::FLATTEN_BLOCK_TAGS,
+            $removeStylesRegexps,
+            CleanerDefaults::REMOVE_BLOCK_STYLES
         );
 
         $this->reworkReconstructor = new ReworkReconstructor(

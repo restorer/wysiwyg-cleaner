@@ -64,7 +64,9 @@ class HtmlParser
 
             if ($sourceChild instanceof \DOMCharacterData) {
                 if ($sourceChild->childNodes !== null && $sourceChild->childNodes->length) {
-                    throw new CleanerException('"' . CleanerUtils::getClass($sourceChild) . '" has non-empty child nodes');
+                    throw new CleanerException(
+                        '"' . CleanerUtils::getClass($sourceChild) . '" has non-empty child nodes'
+                    );
                 }
 
                 if ($destinationChild instanceof HtmlText) {

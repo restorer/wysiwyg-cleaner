@@ -10,6 +10,8 @@ class HtmlElement extends HtmlContainer implements HtmlNode
     const TAG_BR = 'br';
 
     const ATTR_STYLE = 'style';
+    const ATTR_ID = 'id';
+    const ATTR_CLASS = 'class';
 
     /** @var string */
     private $tag;
@@ -109,8 +111,6 @@ class HtmlElement extends HtmlContainer implements HtmlNode
 
     /**
      * @param CssStyle $computedStyle
-     *
-     * @return mixed|void
      */
     public function setComputedStyle(CssStyle $computedStyle)
     {

@@ -13,8 +13,6 @@ interface HtmlNode
 
     /**
      * @param CssStyle $computedStyle
-     *
-     * @return mixed
      */
     public function setComputedStyle(CssStyle $computedStyle);
 

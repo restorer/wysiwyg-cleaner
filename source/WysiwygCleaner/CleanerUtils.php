@@ -10,8 +10,8 @@ use WysiwygCleaner\Html\HtmlNode;
 class CleanerUtils
 {
     const INDENT = '    ';
-
     const NBSP_CHARACTER = "\xc2\xa0"; // equals to \mb_chr(0xa0, 'UTF-8')
+    const BOM_CHARACTER = "\xef\xbb\xbf"; // equals to \mb_chr(0xfeff, 'UTF-8')
 
     /**
      * @param $value
@@ -85,13 +85,28 @@ class CleanerUtils
                 continue;
             }
 
-            foreach ($keepWhitespacePropertiesRexegps as $regexp) {
-                if (preg_match($regexp, $property)) {
-                    return false;
-                }
+            if (self::matchRegexps($property, $keepWhitespacePropertiesRexegps)) {
+                return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * @param string $str
+     * @param string[] $regexps
+     *
+     * @return bool
+     */
+    public static function matchRegexps(string $str, array $regexps) : bool
+    {
+        foreach ($regexps as $regexp) {
+            if (preg_match($regexp, $str)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

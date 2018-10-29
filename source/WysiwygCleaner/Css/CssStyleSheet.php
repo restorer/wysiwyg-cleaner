@@ -33,6 +33,12 @@ class CssStyleSheet
      */
     public function resolveStyle(CssSelector $selector) : CssStyle
     {
-        return $this->styleMap[$selector->getElementName()] ?? new CssStyle();
+        $result = $this->styleMap[$selector->getElementName()] ?? new CssStyle();
+
+        if (isset($this->styleMap['*'])) {
+            $result->extendAll($this->styleMap['*']);
+        }
+
+        return $result;
     }
 }

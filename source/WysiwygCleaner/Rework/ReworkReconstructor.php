@@ -22,7 +22,7 @@ class ReworkReconstructor
     private $preferableTags;
 
     /** @var string[] */
-    private $keepWhitespacePropertiesRexegps;
+    private $keepWhitespacePropertiesRegexps;
 
     /** @var CssRenderer */
     private $cssRenderer;
@@ -35,18 +35,18 @@ class ReworkReconstructor
 
     /**
      * @param array $preferableTags
-     * @param array $keepWhitespacePropertiesRexegps
+     * @param array $keepWhitespacePropertiesRegexps
      * @param CssRenderer $cssRenderer
      * @param CssStyleSheet $styleSheet
      */
     public function __construct(
         array $preferableTags,
-        array $keepWhitespacePropertiesRexegps,
+        array $keepWhitespacePropertiesRegexps,
         CssRenderer $cssRenderer,
         CssStyleSheet $styleSheet
     ) {
         $this->preferableTags = array_map('\strtolower', $preferableTags);
-        $this->keepWhitespacePropertiesRexegps = $keepWhitespacePropertiesRexegps;
+        $this->keepWhitespacePropertiesRegexps = $keepWhitespacePropertiesRegexps;
         $this->cssRenderer = $cssRenderer;
         $this->styleSheet = $styleSheet;
 
@@ -120,7 +120,7 @@ class ReworkReconstructor
 
             foreach ($child->getComputedStyle()->getDeclarations() as $property => $declaration) {
                 if (!$baseChildStyle->hasProperty($property)
-                    || $declaration->getExpression() !== $baseChildStyle->getDeclaration($property)->getExpression()
+                    || !$declaration->equals($baseChildStyle->getDeclaration($property))
                 ) {
                     $reconstructedChildStyle->append($declaration);
                 }
@@ -186,7 +186,7 @@ class ReworkReconstructor
 
             $isStrippableLineBreak = CleanerUtils::isStrippableLineBreak(
                 $child,
-                $this->keepWhitespacePropertiesRexegps
+                $this->keepWhitespacePropertiesRegexps
             );
 
             if (!($child instanceof HtmlText) && !$isStrippableLineBreak) {
@@ -199,6 +199,8 @@ class ReworkReconstructor
                 continue;
             }
 
+            $shouldBreakImmediately = $isStrippableLineBreak;
+
             if ($isStrippableLineBreak) {
                 $prevChild = ($i > 0 ? $container->getChildren()[$i - 1] : null);
                 $nextChild = ($i + 1 < $len ? $container->getChildren()[$i + 1] : null);
@@ -207,7 +209,7 @@ class ReworkReconstructor
                     || !($nextChild instanceof HtmlText)
                     || $prevChild->getComputedStyle()->compareProperties($nextChild->getComputedStyle()) < 0
                 ) {
-                    $isStrippableLineBreak = false;
+                    $shouldBreakImmediately = false;
                 }
             }
 
@@ -224,14 +226,14 @@ class ReworkReconstructor
                 $intoElement = end($elementsStack);
                 $stylesDiff = $intoElement->getComputedStyle()->compareProperties($child->getComputedStyle());
 
-                if ($stylesDiff >= 0 || $isStrippableLineBreak) {
+                if ($stylesDiff >= 0 || $shouldBreakImmediately) {
                     break;
                 }
 
                 array_pop($elementsStack);
             }
 
-            if ($stylesDiff > 0 && !$isStrippableLineBreak) {
+            if ($stylesDiff !== 0 && !$isStrippableLineBreak) {
                 $wrapperElement = new HtmlElement('', null, $child->getComputedStyle());
                 $elementsStack[] = $wrapperElement;
 
@@ -249,6 +251,19 @@ class ReworkReconstructor
             } else {
                 $intoElement->appendChild($child);
             }
+        }
+
+        if (($container instanceof HtmlElement)
+            && \count($children) === 1
+            && ($children[0] instanceof HtmlElement)
+            && $children[0]->getTag() === ''
+        ) {
+            /** @var CssStyle $mergedBlockStyle */
+            $mergedBlockStyle = $children[0]->getComputedStyle();
+            $mergedBlockStyle->extend($container->getComputedStyle()->getDeclaration(CssDeclaration::PROP_DISPLAY));
+
+            $container->setComputedStyle($mergedBlockStyle);
+            $children = $children[0]->getChildren();
         }
 
         $container->setChildren($children);

@@ -5,12 +5,32 @@ namespace WysiwygCleaner;
 class CleanerDefaults
 {
     const FLATTEN_INLINE_TAGS = ['b', 'em', 'i', 'small', 'span', 'strong'];
-    const REMOVE_EMPTY_TAGS = ['p', 'div'];
-    const KEEP_ATTRIBUTES = ['id', 'class', 'href', '_target', 'src', 'alt', 'width', 'height'];
+    const REMOVE_IDS = ['/^_mce_caret$/'];
+    const REMOVE_CLASSES = ['/^ng-*/'];
+    const FLATTEN_BLOCK_TAGS = ['p', 'div'];
+    const REMOVE_BLOCK_STYLES = ['/^font/', '/^color$/'];
+    const KEEP_ATTRIBUTES = ['href', '_target', 'src', 'alt', 'width', 'height'];
     const KEEP_WHITESPACE_PROPS = ['/background*/'];
     const PREFERABLE_TAGS = ['strong', 'em', 'small', 'span'];
 
     const USER_AGENT_STYLESHEET = '
+        * {
+            -webkit-text-stroke-width: 0px;
+            font-variant-caps: normal;
+            font-variant-ligatures: normal;
+            letter-spacing: normal;
+            line-height: normal;
+            orphans: auto;
+            text-align: start;
+            text-decoration-color: initial;
+            text-decoration-style: initial;
+            text-indent: 0px;
+            text-transform: none;
+            white-space: normal;
+            widows: 1;
+            word-spacing: 0px;
+        }
+
         /* Block (block, list-item, table, etc.) */
 
         address { display: block; font-style: italic; }
@@ -76,7 +96,7 @@ class CleanerDefaults
         dfn { display: inline; font-style: italic; }
         em { display: inline; font-style: italic; }
         i { display: inline; font-style: italic; }
-        img { display: inline; }
+        img { display: inline; color: var(--cleaner-any); }
         kbd { display: inline; font-family: monospace; }
         label { display: inline; }
         map { display: inline; }

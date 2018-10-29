@@ -111,7 +111,7 @@ class CssStyle
     {
         foreach ($this->declarations as $property => $declaration) {
             if (!$other->hasProperty($property)
-                || $this->declarations[$property]->getExpression() !== $other->declarations[$property]->getExpression()
+                || !$this->declarations[$property]->equals($other->declarations[$property])
             ) {
                 return false;
             }
@@ -139,9 +139,7 @@ class CssStyle
          */
 
         foreach ($this->declarations as $property => $declaration) {
-            if (!$other->hasProperty($property)
-                || $declaration->getExpression() !== $other->declarations[$property]->getExpression()
-            ) {
+            if (!$other->hasProperty($property) || !$declaration->equals($other->declarations[$property])) {
                 return -1;
             }
         }

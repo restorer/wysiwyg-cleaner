@@ -14,19 +14,33 @@ use WysiwygCleaner\Html\HtmlText;
 class ReworkCleaner
 {
     /** @var string[] */
-    private $keepWhitespacePropertiesRexegps;
+    private $keepWhitespacePropertiesRegexps;
 
     /** @var string[] */
-    private $removeEmptyTags;
+    private $flattenBlockTags;
+
+    /** @var string[] */
+    private $removeStylesRegexps;
+
+    /** @var string[] */
+    private $removeBlockStylesRegexps;
 
     /**
      * @param array $keepWhitespacePropertiesRegexps
-     * @param array $removeEmptyTags
+     * @param array $flattenBlockTags
+     * @param array $removeStylesRegexps
+     * @param array $removeBlockStylesRegexps
      */
-    public function __construct(array $keepWhitespacePropertiesRegexps, array $removeEmptyTags)
-    {
-        $this->keepWhitespacePropertiesRexegps = $keepWhitespacePropertiesRegexps;
-        $this->removeEmptyTags = \array_map('\strtolower', $removeEmptyTags);
+    public function __construct(
+        array $keepWhitespacePropertiesRegexps,
+        array $flattenBlockTags,
+        array $removeStylesRegexps,
+        array $removeBlockStylesRegexps
+    ) {
+        $this->keepWhitespacePropertiesRegexps = $keepWhitespacePropertiesRegexps;
+        $this->flattenBlockTags = \array_map('\strtolower', $flattenBlockTags);
+        $this->removeStylesRegexps = $removeStylesRegexps;
+        $this->removeBlockStylesRegexps = $removeBlockStylesRegexps;
     }
 
     /**
@@ -52,6 +66,7 @@ class ReworkCleaner
                     );
                 } else {
                     $this->cleanup($node);
+                    $node->setComputedStyle($this->cleanupStyle($node->getComputedStyle()));
                     $children[] = $node;
                 }
             } elseif ($node instanceof HtmlText) {
@@ -72,7 +87,7 @@ class ReworkCleaner
                 }
 
                 if ($mt[2] !== '') {
-                    $children[] = new HtmlText($mt[2], $node->getComputedStyle());
+                    $children[] = new HtmlText($mt[2], $this->cleanupStyle($node->getComputedStyle()));
                 }
 
                 if ($mt[3] !== '') {
@@ -100,7 +115,10 @@ class ReworkCleaner
      */
     private function cleanupInnerWhitespaces(string $text) : string
     {
+        $text = str_replace(CleanerUtils::BOM_CHARACTER, '', $text);
+
         // As this cleaner is not intended to support <pre>, we can treat tabs and newline characters as spaces
+        /** @noinspection CascadeStringReplacementInspection */
         $text = str_replace(["\t", "\n", "\r"], ' ', $text);
 
         // Several &nbsp; can be used for indenting, but we will clean it
@@ -123,23 +141,46 @@ class ReworkCleaner
      */
     private function removeEmptyChildren(array $children) : array
     {
-        return \array_values(
-            \array_filter(
-                $children,
-                function (HtmlNode $child) {
-                    return (
-                        !($child instanceof HtmlElement)
-                        || !empty($child->getAttributes())
-                        || !empty($child->getChildren())
-                        || !\in_array(
-                            $child->getTag(),
-                            $this->removeEmptyTags,
-                            true
-                        )
-                    );
+        $result = [];
+
+        foreach ($children as $child) {
+            if (!($child instanceof HtmlElement)
+                || !empty($child->getAttributes())
+                || !\in_array($child->getTag(), $this->flattenBlockTags, true)
+            ) {
+                $result[] = $child;
+                continue;
+            }
+
+            if (empty($child->getChildren())) {
+                continue;
+            }
+
+            if (CleanerUtils::isInlineDisplay($child->getComputedStyle()->getDisplay())) {
+                $result[] = $child;
+                continue;
+            }
+
+            $hasInnerInlineChild = false;
+
+            foreach ($child->getChildren() as $innerChild) {
+                if (CleanerUtils::isInlineDisplay($innerChild->getComputedStyle()->getDisplay())) {
+                    $hasInnerInlineChild = true;
+                    break;
                 }
-            )
-        );
+            }
+
+            if ($hasInnerInlineChild) {
+                $result[] = $child;
+                continue;
+            }
+
+            foreach ($child->getChildren() as $innerChild) {
+                $result[] = $innerChild;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -278,6 +319,27 @@ class ReworkCleaner
      *
      * @return CssStyle
      */
+    private function cleanupStyle(CssStyle $style) : CssStyle
+    {
+        $result = new CssStyle();
+        $isInline = CleanerUtils::isInlineDisplay($style->getDisplay());
+
+        foreach ($style->getDeclarations() as $property => $declaration) {
+            if (!CleanerUtils::matchRegexps($property, $this->removeStylesRegexps)
+                && ($isInline || !CleanerUtils::matchRegexps($property, $this->removeBlockStylesRegexps))
+            ) {
+                $result->append($declaration);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param CssStyle $style
+     *
+     * @return CssStyle
+     */
     private function cleanupWhitespaceStyle(CssStyle $style) : CssStyle
     {
         $result = new CssStyle();
@@ -288,7 +350,7 @@ class ReworkCleaner
                 continue;
             }
 
-            foreach ($this->keepWhitespacePropertiesRexegps as $regexp) {
+            foreach ($this->keepWhitespacePropertiesRegexps as $regexp) {
                 if (preg_match($regexp, $property)) {
                     $result->append($declaration);
                     break;
@@ -308,7 +370,7 @@ class ReworkCleaner
     {
         return (($node instanceof HtmlText)
             && ($node->getText() === ' ')
-            && CleanerUtils::canStripWhitespaceStyle($node->getComputedStyle(), $this->keepWhitespacePropertiesRexegps)
+            && CleanerUtils::canStripWhitespaceStyle($node->getComputedStyle(), $this->keepWhitespacePropertiesRegexps)
         );
     }
 
@@ -319,6 +381,6 @@ class ReworkCleaner
      */
     private function isStrippableLineBreak(HtmlNode $node) : bool
     {
-        return CleanerUtils::isStrippableLineBreak($node, $this->keepWhitespacePropertiesRexegps);
+        return CleanerUtils::isStrippableLineBreak($node, $this->keepWhitespacePropertiesRegexps);
     }
 }

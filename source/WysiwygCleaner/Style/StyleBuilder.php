@@ -3,6 +3,7 @@
 namespace WysiwygCleaner\Style;
 
 use WysiwygCleaner\CleanerException;
+use WysiwygCleaner\CleanerUtils;
 use WysiwygCleaner\Css\CssDeclaration;
 use WysiwygCleaner\Css\CssParser;
 use WysiwygCleaner\Css\CssSelector;
@@ -12,7 +13,6 @@ use WysiwygCleaner\Html\HtmlContainer;
 use WysiwygCleaner\Html\HtmlDocument;
 use WysiwygCleaner\Html\HtmlElement;
 use WysiwygCleaner\Html\HtmlText;
-use WysiwygCleaner\CleanerUtils;
 
 class StyleBuilder
 {
@@ -92,7 +92,9 @@ class StyleBuilder
 
                 $child->setComputedStyle($textComputedStyle);
             } else {
-                throw new CleanerException('Doesn\'t know what to do with child "' . CleanerUtils::getClass($child) . '"');
+                throw new CleanerException(
+                    'Doesn\'t know what to do with child "' . CleanerUtils::getClass($child) . '"'
+                );
             }
         }
     }
