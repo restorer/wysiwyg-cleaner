@@ -57,6 +57,8 @@ class CleanerDefaults
         [true, 'alt'],
         [true, 'width'],
         [true, 'height'],
+        [true, 'frameborder'],
+        [true, 'allowfullscreen'],
         [false, 'id', '/^_?mce/'],
         [true, 'id'],
         [false],
@@ -142,6 +144,7 @@ class CleanerDefaults
         dfn { display: inline; font-style: italic; }
         em { display: inline; font-style: italic; }
         i { display: inline; font-style: italic; }
+        iframe { display: inline; }
         img { display: inline; }
         kbd { display: inline; font-family: monospace; }
         label { display: inline; }
