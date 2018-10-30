@@ -56,7 +56,7 @@ class HtmlRenderer
                     $result .= $this->renderClosingTag($child);
                 }
             } elseif ($child instanceof HtmlText) {
-                $result .= $this->renderEscapedText($child->getText());
+                $result .= $this->renderEscapedText($child->getText(), false);
             } else {
                 throw new CleanerException(
                     'Doesn\'t know what to do with child "' . CleanerUtils::getClass($child) . '"'
@@ -78,7 +78,7 @@ class HtmlRenderer
         $result = '<' . $element->getTag();
 
         foreach ($element->getAttributes() as $name => $value) {
-            $result .= ' ' . $name . '="' . $this->renderEscapedText($value) . '"';
+            $result .= ' ' . $name . '="' . $this->renderEscapedText($value, true) . '"';
         }
 
         if ($isSelfClosing) {
@@ -100,15 +100,16 @@ class HtmlRenderer
 
     /**
      * @param string $text
+     * @param bool $escapeQuotes
      *
      * @return string
      */
-    private function renderEscapedText(string $text) : string
+    private function renderEscapedText(string $text, bool $escapeQuotes) : string
     {
         // Should we change \mb_chr(8211, 'UTF-8') to "&ndash;"?
         // Should we change "«" and "»" to "&laquo;" and "&raquo;"?
 
-        $text = htmlspecialchars($text, ENT_QUOTES | ENT_XHTML);
+        $text = htmlspecialchars($text, ($escapeQuotes ? ENT_QUOTES : 0) | ENT_XHTML);
         return str_replace(CleanerUtils::NBSP_CHARACTER, '&nbsp;', $text);
     }
 }

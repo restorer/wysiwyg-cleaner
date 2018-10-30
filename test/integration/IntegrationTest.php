@@ -62,4 +62,15 @@ class IntegrationTest extends TestCase
             )
         );
     }
+
+    /**
+     * @throws \WysiwygCleaner\CleanerException
+     */
+    public function testQuotes()
+    {
+        static::assertEquals(
+            '<p id="&quot;&apos;">"A"</p>',
+            $this->cleaner->clean('<p id="&quot;\'">"A"</p>')
+        );
+    }
 }
