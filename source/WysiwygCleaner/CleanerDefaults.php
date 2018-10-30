@@ -4,33 +4,73 @@ namespace WysiwygCleaner;
 
 class CleanerDefaults
 {
-    const FLATTEN_INLINE_TAGS = ['b', 'em', 'i', 'small', 'span', 'strong'];
-    const REMOVE_IDS = ['/^_mce_caret$/'];
-    const REMOVE_CLASSES = ['/^ng-*/'];
-    const FLATTEN_BLOCK_TAGS = ['p', 'div'];
-    const REMOVE_BLOCK_STYLES = ['/^font/', '/^color$/'];
-    const KEEP_ATTRIBUTES = ['href', '_target', 'src', 'alt', 'width', 'height'];
-    const KEEP_WHITESPACE_PROPS = ['/background*/'];
-    const PREFERABLE_TAGS = ['strong', 'em', 'small', 'span'];
+    const STYLE_RULES = [
+        [false, '-webkit-text-stroke-width'],
+        [false, 'font-style', 'normal'],
+        [false, 'font-variant-caps'],
+        [false, 'font-variant-ligatures'],
+        [false, 'font-variant', 'normal'],
+        [false, 'font-weight', '/^(?:normal|400)$/'],
+        [false, 'letter-spacing'],
+        [false, 'line-height', 'normal'],
+        [false, 'orphans'],
+        [false, 'text-align', '/^(?:start|left)$/'],
+        [false, 'text-decoration-color'],
+        [false, 'text-decoration-style'],
+        [false, 'text-indent'],
+        [false, 'text-transform', 'none'],
+        [false, 'white-space', 'normal'],
+        [false, 'widows'],
+        [false, 'word-spacing'],
+        [false, 'color', 'tag' => 'img'],
+        [false, 'color', 'inline' => false],
+        [false, '/^font/', 'tag' => 'img'],
+        [false, '/^font/', 'inline' => false],
+        [true],
+    ];
+
+    const FLATTEN_TAGS_RULES = [
+        [false, 'b', 'inline' => true],
+        [false, 'em', 'inline' => true],
+        [false, 'i', 'inline' => true],
+        [false, 'small', 'inline' => true],
+        [false, 'span', 'inline' => true],
+        [false, 'strong', 'inline' => true],
+        [true],
+    ];
+
+    const FLATTEN_CLASSES_RULES = [
+        [false, '/^ng-*/'],
+        [true],
+    ];
+
+    const FLATTEN_ATTRIBUTES_RULES = [
+        [true, 'href'],
+        [true, '_target'],
+        [true, 'src'],
+        [true, 'alt'],
+        [true, 'width'],
+        [true, 'height'],
+        [false, 'id', '/^_mce_caret$/'],
+        [true, 'id'],
+        [false],
+    ];
+
+    const CLEAN_WHITESPACE_STYLE_RULES = [
+        [true, 'display'],
+        [true, '/^background/'],
+        [false],
+    ];
+
+    const CLEAN_TAGS_RULES = [
+        [false, 'div', 'blocky' => true],
+        [false, 'p', 'blocky' => true],
+        [true],
+    ];
+
+    const RECONSTRUCT_TAGS = ['strong', 'em', 'small', 'span'];
 
     const USER_AGENT_STYLESHEET = '
-        * {
-            -webkit-text-stroke-width: 0px;
-            font-variant-caps: normal;
-            font-variant-ligatures: normal;
-            letter-spacing: normal;
-            line-height: normal;
-            orphans: auto;
-            text-align: start;
-            text-decoration-color: initial;
-            text-decoration-style: initial;
-            text-indent: 0px;
-            text-transform: none;
-            white-space: normal;
-            widows: 1;
-            word-spacing: 0px;
-        }
-
         /* Block (block, list-item, table, etc.) */
 
         address { display: block; font-style: italic; }
@@ -96,7 +136,7 @@ class CleanerDefaults
         dfn { display: inline; font-style: italic; }
         em { display: inline; font-style: italic; }
         i { display: inline; font-style: italic; }
-        img { display: inline; color: var(--cleaner-any); }
+        img { display: inline; }
         kbd { display: inline; font-family: monospace; }
         label { display: inline; }
         map { display: inline; }

@@ -7,7 +7,6 @@ class CssDeclaration
     const PROP_DISPLAY = 'display';
 
     const EXPR_INHERIT = 'inherit';
-    const EXPR_ANY = 'var(--cleaner-any)';
 
     const DISPLAY_NONE = 'none';
     const DISPLAY_INLINE = 'inline';
@@ -58,21 +57,20 @@ class CssDeclaration
     }
 
     /**
-     * @return bool
-     */
-    public function isInternalDeclaration() : bool
-    {
-        return preg_match('/^var\(\-\-cleaner\-[0-9A-Za-z\-]+\)$/', $this->expression);
-    }
-
-    /**
      * @param CssDeclaration $other
      *
      * @return bool
      */
     public function equals(CssDeclaration $other) : bool
     {
-        return ($this->expression === self::EXPR_ANY || $other->expression === self::EXPR_ANY
-            || $this->expression === $other->expression);
+        return ($this->expression === $other->expression);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isInternalDeclaration() : bool
+    {
+        return preg_match('/^var\(\-\-cleaner\-[^\)]+\)$/', $this->expression);
     }
 }

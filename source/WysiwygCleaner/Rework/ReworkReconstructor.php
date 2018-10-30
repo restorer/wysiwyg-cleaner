@@ -21,9 +21,6 @@ class ReworkReconstructor
     /** @var string[] */
     private $preferableTags;
 
-    /** @var string[] */
-    private $keepWhitespacePropertiesRegexps;
-
     /** @var CssRenderer */
     private $cssRenderer;
 
@@ -35,18 +32,15 @@ class ReworkReconstructor
 
     /**
      * @param array $preferableTags
-     * @param array $keepWhitespacePropertiesRegexps
      * @param CssRenderer $cssRenderer
      * @param CssStyleSheet $styleSheet
      */
     public function __construct(
         array $preferableTags,
-        array $keepWhitespacePropertiesRegexps,
         CssRenderer $cssRenderer,
         CssStyleSheet $styleSheet
     ) {
         $this->preferableTags = array_map('\strtolower', $preferableTags);
-        $this->keepWhitespacePropertiesRegexps = $keepWhitespacePropertiesRegexps;
         $this->cssRenderer = $cssRenderer;
         $this->styleSheet = $styleSheet;
 
@@ -71,26 +65,139 @@ class ReworkReconstructor
 
     /**
      * @param HtmlContainer $container
-     *
-     * @throws CleanerException
      */
-    private function reconstructAttributes(HtmlContainer $container)
+    private function reconstructStructure(HtmlContainer $container)
     {
-        foreach ($container->getChildren() as $child) {
-            if (!($child instanceof HtmlElement)) {
+        $initialTextStyle = ($container instanceof HtmlElement)
+            ? (clone $container->getComputedStyle())
+            : new CssStyle();
+
+        $initialTextStyle->extend($this->inlineDisplayDeclaration);
+
+        $children = [];
+        $elementsStack = [];
+
+        /** @noinspection ForeachInvariantsInspection */
+        for ($i = 0, $len = \count($container->getChildren()); $i < $len; $i++) {
+            $child = $container->getChildren()[$i];
+            $isStrippableLineBreak = ($child instanceof HtmlElement) && $child->isStrippable();
+
+            if ($isStrippableLineBreak) {
+                $prevChild = ($i > 0 ? $container->getChildren()[$i - 1] : null);
+                $nextChild = ($i + 1 < $len ? $container->getChildren()[$i + 1] : null);
+
+                if (!($prevChild instanceof HtmlText)
+                    || !($nextChild instanceof HtmlText)
+                    || $prevChild->getComputedStyle()->compareTo($nextChild->getComputedStyle()) < 0
+                ) {
+                    $isStrippableLineBreak = false;
+                }
+            }
+
+            if (!($child instanceof HtmlText) && !$isStrippableLineBreak) {
+                if ($child instanceof HtmlContainer) {
+                    $this->reconstructStructure($child);
+                }
+
+                $children[] = $child;
+                $elementsStack = [];
                 continue;
             }
 
-            $renderedStyle = $this->cssRenderer->renderStyle($child->getComputedStyle());
+            $childStyle = $child->getComputedStyle();
 
-            if ($renderedStyle === '') {
-                $child->removeAttribute(HtmlElement::ATTR_STYLE);
-            } else {
-                $child->setAttribute(HtmlElement::ATTR_STYLE, $renderedStyle);
+            if (($child instanceof HtmlText) && !$childStyle->isInlineDisplay()) {
+                $wrapperElement = new HtmlElement('', null, $childStyle);
+                $wrapperElement->appendChild($child);
+
+                $children[] = $child;
+                $elementsStack = [];
+                continue;
             }
 
-            $child->setComputedStyle(new CssStyle());
-            $this->reconstructAttributes($child);
+            /** @var HtmlElement|null $intoElement */
+            /** @var int $stylesDiff */
+
+            for (; ;) {
+                $intoElement = empty($elementsStack) ? null : end($elementsStack);
+                $intoStyle = ($intoElement === null ? $initialTextStyle : $intoElement->getComputedStyle());
+                $stylesDiff = ($isStrippableLineBreak ? 0 : $intoStyle->compareTo($childStyle));
+
+                if ($intoElement === null || $stylesDiff >= 0) {
+                    break;
+                }
+
+                array_pop($elementsStack);
+            }
+
+            if ($stylesDiff > 0 && !$isStrippableLineBreak) {
+                $wrapperElement = new HtmlElement('', null, $child->getComputedStyle());
+                $elementsStack[] = $wrapperElement;
+
+                if ($intoElement === null) {
+                    $children[] = $wrapperElement;
+                } else {
+                    $intoElement->appendChild($wrapperElement);
+                }
+
+                $intoElement = $wrapperElement;
+            }
+
+            if ($intoElement === null) {
+                $children[] = $child;
+            } else {
+                $intoElement->appendChild($child);
+            }
+        }
+
+        if (($container instanceof HtmlElement)
+            && \count($children) === 1
+            && ($children[0] instanceof HtmlElement)
+            && $children[0]->getTag() === ''
+        ) {
+            /** @var CssStyle $mergedBlockStyle */
+            $mergedBlockStyle = $children[0]->getComputedStyle();
+            $mergedBlockStyle->extend($container->getComputedStyle()->getDeclaration(CssDeclaration::PROP_DISPLAY));
+
+            $container->setComputedStyle($mergedBlockStyle);
+            $children = $children[0]->getChildren();
+        }
+
+        $container->setChildren($children);
+    }
+
+    /**
+     * @param HtmlContainer $container
+     */
+    private function reconstructTags(HtmlContainer $container)
+    {
+        foreach ($container->getChildren() as $child) {
+            if ($child instanceof HtmlContainer) {
+                $this->reconstructTags($child);
+            }
+
+            if (!($child instanceof HtmlElement) || $child->getTag() !== '') {
+                continue;
+            }
+
+            $matchedTag = self::FALLBACK_TAG;
+            $matchedStylesDiff = null;
+
+            foreach ($this->preferableTags as $tag) {
+                $stylesDiff = $this->styleSheet
+                    ->resolveStyle(CssSelector::forTagName($tag))
+                    ->compareTo($child->getComputedStyle());
+
+                if ($matchedStylesDiff === null
+                    || $matchedStylesDiff < 0
+                    || ($stylesDiff >= 0 && $stylesDiff < $matchedStylesDiff)
+                ) {
+                    $matchedTag = $tag;
+                    $matchedStylesDiff = $stylesDiff;
+                }
+            }
+
+            $child->setTag($matchedTag);
         }
     }
 
@@ -133,139 +240,26 @@ class ReworkReconstructor
 
     /**
      * @param HtmlContainer $container
+     *
+     * @throws CleanerException
      */
-    private function reconstructTags(HtmlContainer $container)
+    private function reconstructAttributes(HtmlContainer $container)
     {
         foreach ($container->getChildren() as $child) {
-            if ($child instanceof HtmlContainer) {
-                $this->reconstructTags($child);
-            }
-
-            if (!($child instanceof HtmlElement) || $child->getTag() !== '') {
+            if (!($child instanceof HtmlElement)) {
                 continue;
             }
 
-            $matchedTag = self::FALLBACK_TAG;
-            $matchedStylesDiff = null;
+            $renderedStyle = $this->cssRenderer->renderStyle($child->getComputedStyle());
 
-            foreach ($this->preferableTags as $tag) {
-                $stylesDiff = $this->styleSheet
-                    ->resolveStyle(CssSelector::forTagName($tag))
-                    ->compareProperties($child->getComputedStyle());
-
-                if ($matchedStylesDiff === null
-                    || $matchedStylesDiff < 0
-                    || ($stylesDiff >= 0 && $stylesDiff < $matchedStylesDiff)
-                ) {
-                    $matchedTag = $tag;
-                    $matchedStylesDiff = $stylesDiff;
-                }
-            }
-
-            $child->setTag($matchedTag);
-        }
-    }
-
-    /**
-     * @param HtmlContainer $container
-     */
-    private function reconstructStructure(HtmlContainer $container)
-    {
-        $initialTextStyle = ($container instanceof HtmlElement)
-            ? (clone $container->getComputedStyle())
-            : new CssStyle();
-
-        $initialTextStyle->extend($this->inlineDisplayDeclaration);
-
-        $children = [];
-        $elementsStack = [];
-
-        /** @noinspection ForeachInvariantsInspection */
-        for ($i = 0, $len = \count($container->getChildren()); $i < $len; $i++) {
-            $child = $container->getChildren()[$i];
-
-            $isStrippableLineBreak = CleanerUtils::isStrippableLineBreak(
-                $child,
-                $this->keepWhitespacePropertiesRegexps
-            );
-
-            if (!($child instanceof HtmlText) && !$isStrippableLineBreak) {
-                if ($child instanceof HtmlContainer) {
-                    $this->reconstructStructure($child);
-                }
-
-                $children[] = $child;
-                $elementsStack = [];
-                continue;
-            }
-
-            $shouldBreakImmediately = $isStrippableLineBreak;
-
-            if ($isStrippableLineBreak) {
-                $prevChild = ($i > 0 ? $container->getChildren()[$i - 1] : null);
-                $nextChild = ($i + 1 < $len ? $container->getChildren()[$i + 1] : null);
-
-                if (!($prevChild instanceof HtmlText)
-                    || !($nextChild instanceof HtmlText)
-                    || $prevChild->getComputedStyle()->compareProperties($nextChild->getComputedStyle()) < 0
-                ) {
-                    $shouldBreakImmediately = false;
-                }
-            }
-
-            /** @var HtmlElement|null $intoElement */
-            /** @var int $stylesDiff */
-
-            for (; ;) {
-                if (empty($elementsStack)) {
-                    $intoElement = null;
-                    $stylesDiff = $initialTextStyle->compareProperties($child->getComputedStyle());
-                    break;
-                }
-
-                $intoElement = end($elementsStack);
-                $stylesDiff = $intoElement->getComputedStyle()->compareProperties($child->getComputedStyle());
-
-                if ($stylesDiff >= 0 || $shouldBreakImmediately) {
-                    break;
-                }
-
-                array_pop($elementsStack);
-            }
-
-            if ($stylesDiff !== 0 && !$isStrippableLineBreak) {
-                $wrapperElement = new HtmlElement('', null, $child->getComputedStyle());
-                $elementsStack[] = $wrapperElement;
-
-                if ($intoElement === null) {
-                    $children[] = $wrapperElement;
-                } else {
-                    $intoElement->appendChild($wrapperElement);
-                }
-
-                $intoElement = $wrapperElement;
-            }
-
-            if ($intoElement === null) {
-                $children[] = $child;
+            if ($renderedStyle === '') {
+                $child->removeAttribute(HtmlElement::ATTR_STYLE);
             } else {
-                $intoElement->appendChild($child);
+                $child->setAttribute(HtmlElement::ATTR_STYLE, $renderedStyle);
             }
+
+            $child->setComputedStyle(new CssStyle());
+            $this->reconstructAttributes($child);
         }
-
-        if (($container instanceof HtmlElement)
-            && \count($children) === 1
-            && ($children[0] instanceof HtmlElement)
-            && $children[0]->getTag() === ''
-        ) {
-            /** @var CssStyle $mergedBlockStyle */
-            $mergedBlockStyle = $children[0]->getComputedStyle();
-            $mergedBlockStyle->extend($container->getComputedStyle()->getDeclaration(CssDeclaration::PROP_DISPLAY));
-
-            $container->setComputedStyle($mergedBlockStyle);
-            $children = $children[0]->getChildren();
-        }
-
-        $container->setChildren($children);
     }
 }

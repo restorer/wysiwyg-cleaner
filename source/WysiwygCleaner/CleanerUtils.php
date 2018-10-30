@@ -2,10 +2,7 @@
 
 namespace WysiwygCleaner;
 
-use WysiwygCleaner\Css\CssDeclaration;
 use WysiwygCleaner\Css\CssStyle;
-use WysiwygCleaner\Html\HtmlElement;
-use WysiwygCleaner\Html\HtmlNode;
 
 class CleanerUtils
 {
@@ -34,79 +31,82 @@ class CleanerUtils
     }
 
     /**
-     * @param string $display
+     * @param array[] $rules
+     * @param array $values
      *
      * @return bool
+     * @throws CleanerException
      */
-    public static function isInlineDisplay(string $display) : bool
+    public static function matchRules(array $rules, array $values) : bool
     {
-        return ($display === '' || $display === CssDeclaration::DISPLAY_INLINE);
-    }
+        foreach ($rules as $rule) {
+            $count = \count($rule);
 
-    /**
-     * @param string $display
-     *
-     * @return bool
-     */
-    public static function isBlockyDisplay(string $display) : bool
-    {
-        // strpos() is used to cover "inline", "inline-block", "inline-flex", "inline-grid" and "inline-table"
-        return ($display !== '' && strpos($display, CssDeclaration::DISPLAY_INLINE) === false);
-    }
+            if ($count === 0) {
+                throw new CleanerException("Doesn't know what to do with empty rule");
+            }
 
-    /**
-     * @param HtmlNode $node
-     * @param string[] $keepWhitespacePropertiesRexegps
-     *
-     * @return bool
-     */
-    public static function isStrippableLineBreak(HtmlNode $node, array $keepWhitespacePropertiesRexegps) : bool
-    {
-        return (($node instanceof HtmlElement)
-            && ($node->getTag() === HtmlElement::TAG_BR)
-            && self::canStripWhitespaceStyle($node->getComputedStyle(), $keepWhitespacePropertiesRexegps)
-        );
-    }
+            $isMatched = true;
 
-    /**
-     * @param CssStyle $style
-     * @param string[] $keepWhitespacePropertiesRexegps
-     *
-     * @return bool
-     */
-    public static function canStripWhitespaceStyle(CssStyle $style, array $keepWhitespacePropertiesRexegps) : bool
-    {
-        if (!self::isInlineDisplay($style->getDisplay())) {
-            return false;
+            foreach ($values as $key => $value) {
+                if (\is_numeric($key)) {
+                    $key++;
+                }
+
+                if (isset($rule[$key]) && !self::matchRuleValue($rule[$key], $value)) {
+                    $isMatched = false;
+                    break;
+                }
+            }
+
+            if ($isMatched) {
+                return $rule[0];
+            }
         }
+
+        throw new CleanerException("Rules doesn't have default rule");
+    }
+
+    /**
+     * @param array $rules
+     * @param CssStyle $style
+     * @param string $tag
+     *
+     * @return CssStyle
+     * @throws CleanerException
+     */
+    public static function cleanupStyle(array $rules, CssStyle $style, string $tag = '') : CssStyle
+    {
+        $cleanedStyle = new CssStyle();
+        $isInline = $style->isInlineDisplay();
 
         foreach ($style->getDeclarations() as $property => $declaration) {
-            if ($property === CssDeclaration::PROP_DISPLAY) {
-                continue;
-            }
-
-            if (self::matchRegexps($property, $keepWhitespacePropertiesRexegps)) {
-                return false;
+            if (self::matchRules(
+                $rules,
+                [$property, $declaration->getExpression(), 'tag' => $tag, 'inline' => $isInline]
+            )) {
+                $cleanedStyle->append($declaration);
             }
         }
 
-        return true;
+        return $cleanedStyle;
     }
 
     /**
-     * @param string $str
-     * @param string[] $regexps
+     * @param mixed $ruleValue
+     * @param mixed $value
      *
      * @return bool
      */
-    public static function matchRegexps(string $str, array $regexps) : bool
+    private static function matchRuleValue($ruleValue, $value) : bool
     {
-        foreach ($regexps as $regexp) {
-            if (preg_match($regexp, $str)) {
-                return true;
-            }
+        if (\is_string($ruleValue)
+            && !empty($ruleValue)
+            && (strpos($ruleValue, '/') === 0 || strpos($ruleValue, '@') === 0)
+        ) {
+            return preg_match($ruleValue, $value);
         }
 
-        return false;
+        return $ruleValue === $value;
     }
 }

@@ -10,7 +10,6 @@ class HtmlElement extends HtmlContainer implements HtmlNode
     const TAG_BR = 'br';
 
     const ATTR_STYLE = 'style';
-    const ATTR_ID = 'id';
     const ATTR_CLASS = 'class';
 
     /** @var string */
@@ -22,13 +21,21 @@ class HtmlElement extends HtmlContainer implements HtmlNode
     /** @var CssStyle|null */
     private $computedStyle;
 
+    /** @var bool */
+    private $strippable;
+
     /**
      * @param string $tag
-     * @param array<string, string>|null $attributes
+     * @param null $attributes
      * @param CssStyle|null $computedStyle
+     * @param bool $strippable
      */
-    public function __construct(string $tag, $attributes = null, $computedStyle = null)
-    {
+    public function __construct(
+        string $tag,
+        $attributes = null,
+        $computedStyle = null,
+        bool $strippable = false
+    ) {
         $this->tag = \strtolower($tag);
 
         if ($attributes !== null) {
@@ -38,6 +45,8 @@ class HtmlElement extends HtmlContainer implements HtmlNode
         if ($computedStyle !== null) {
             $this->computedStyle = $computedStyle;
         }
+
+        $this->strippable = $strippable;
     }
 
     /**
@@ -102,6 +111,14 @@ class HtmlElement extends HtmlContainer implements HtmlNode
     }
 
     /**
+     * @return string
+     */
+    public function getNodeType() : string
+    {
+        return HtmlNode::TYPE_ELEMENT;
+    }
+
+    /**
      * @return CssStyle
      */
     public function getComputedStyle() : CssStyle
@@ -115,6 +132,22 @@ class HtmlElement extends HtmlContainer implements HtmlNode
     public function setComputedStyle(CssStyle $computedStyle)
     {
         $this->computedStyle = $computedStyle;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isStrippable() : bool
+    {
+        return $this->strippable;
+    }
+
+    /**
+     * @param bool $strippable
+     */
+    public function setStrippable(bool $strippable)
+    {
+        $this->strippable = $strippable;
     }
 
     /**

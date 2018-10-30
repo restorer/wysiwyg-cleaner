@@ -12,34 +12,25 @@ use WysiwygCleaner\Html\HtmlText;
 
 class ReworkFlattener
 {
-    /** @var string[] */
-    private $flattenInlineTags;
+    /** @var array[] */
+    private $tagsRules;
 
-    /** @var string[] */
-    private $removeIdsRegexps;
+    /** @var array[] */
+    private $attributesRules;
 
-    /** @var string[] */
-    private $removeClassesRegexps;
-
-    /** @var string[] */
-    private $keepAttributes;
+    /** @var array[] */
+    private $classesRules;
 
     /**
-     * @param array $flattenInlineTags
-     * @param array $removeIdsRegexps
-     * @param array $removeClassesRegexps
-     * @param array $keepAttributes
+     * @param array[] $tagsRules
+     * @param array[] $classesRules
+     * @param array[] $attributesRules
      */
-    public function __construct(
-        array $flattenInlineTags,
-        array $removeIdsRegexps,
-        array $removeClassesRegexps,
-        array $keepAttributes
-    ) {
-        $this->flattenInlineTags = array_map('\strtolower', $flattenInlineTags);
-        $this->removeIdsRegexps = $removeIdsRegexps;
-        $this->removeClassesRegexps = $removeClassesRegexps;
-        $this->keepAttributes = array_map('\strtolower', $keepAttributes);
+    public function __construct(array $tagsRules, array $classesRules, array $attributesRules)
+    {
+        $this->tagsRules = $tagsRules;
+        $this->classesRules = $classesRules;
+        $this->attributesRules = $attributesRules;
     }
 
     /**
@@ -69,20 +60,14 @@ class ReworkFlattener
             $cleanedAttributes = [];
 
             foreach ($node->getAttributes() as $name => $value) {
-                if ($name === HtmlElement::ATTR_ID) {
-                    if (!CleanerUtils::matchRegexps($value, $this->removeIdsRegexps)) {
-                        $cleanedAttributes[$name] = $value;
-                    }
-                } elseif ($name === HtmlElement::ATTR_CLASS) {
+                if ($name === HtmlElement::ATTR_CLASS) {
                     $classNameList = \array_values(
                         \array_filter(
                             explode(' ', $value),
                             function (string $className) : bool {
                                 return ($className !== ''
-                                    && !CleanerUtils::matchRegexps(
-                                        $className,
-                                        $this->removeClassesRegexps
-                                    ));
+                                    && CleanerUtils::matchRules($this->classesRules, [$className])
+                                );
                             }
                         )
                     );
@@ -90,12 +75,17 @@ class ReworkFlattener
                     if (!empty($classNameList)) {
                         $cleanedAttributes[$name] = implode(' ', $classNameList);
                     }
-                } elseif (\in_array($name, $this->keepAttributes, true)) {
+                } elseif (CleanerUtils::matchRules($this->attributesRules, [$name, $value])) {
                     $cleanedAttributes[$name] = $value;
                 }
             }
 
-            if (!empty($cleanedAttributes) || !$this->canFlattenInlineElement($node)) {
+            if (!empty($cleanedAttributes)
+                || CleanerUtils::matchRules(
+                    $this->tagsRules,
+                    [$node->getTag(), 'inline' => $node->getComputedStyle()->isInlineDisplay()]
+                )
+            ) {
                 $cleanedNode = new HtmlElement($node->getTag(), $cleanedAttributes);
                 $cleanedNode->setComputedStyle($node->getComputedStyle());
 
@@ -111,16 +101,5 @@ class ReworkFlattener
         } else {
             throw new CleanerException('Doesn\'t know what to do with node "' . CleanerUtils::getClass($node) . '"');
         }
-    }
-
-    /**
-     * @param HtmlElement $element
-     *
-     * @return bool
-     */
-    private function canFlattenInlineElement(HtmlElement $element) : bool
-    {
-        return \in_array($element->getTag(), $this->flattenInlineTags, true)
-            && CleanerUtils::isInlineDisplay($element->getComputedStyle()->getDisplay());
     }
 }

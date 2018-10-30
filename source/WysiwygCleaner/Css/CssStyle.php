@@ -50,11 +50,30 @@ class CssStyle
     }
 
     /**
+     * @param string $defaultDisplay
+     *
      * @return string
      */
-    public function getDisplay() : string
+    public function getDisplay(string $defaultDisplay = '') : string
     {
-        return \strtolower($this->getExpression(CssDeclaration::PROP_DISPLAY, ''));
+        return \strtolower($this->getExpression(CssDeclaration::PROP_DISPLAY, $defaultDisplay));
+    }
+
+    /**
+     * @return bool
+     */
+    public function isInlineDisplay() : bool
+    {
+        return ($this->getDisplay(CssDeclaration::DISPLAY_INLINE) === CssDeclaration::DISPLAY_INLINE);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isBlockyDisplay() : bool
+    {
+        // strpos() is used to cover "inline", "inline-block", "inline-flex", "inline-grid" and "inline-table"
+        return (strpos($this->getDisplay(CssDeclaration::DISPLAY_INLINE), CssDeclaration::DISPLAY_INLINE) === false);
     }
 
     /**
@@ -103,56 +122,37 @@ class CssStyle
     }
 
     /**
+     * "Other style can be extended from this" means that other style can be constructed by just adding new properties,
+     * and not by replacing existing properties, or reverthig them back.
+     *
+     * For example this style is "color: #f00; font-weight: bold;". Than when other style is:
+     * - "color: #f00; font-weight: bold;" - it equals, result = 0;
+     * - "color: #f00; font-weight: bold; font-style: italic;" - it can be extended, result = 1;
+     * - "color: #f00; font-weight: bold; background-color: #fff; font-size: smaller;" - it can be extended, result = 2;
+     * - "font-weight: bold;" - it can NOT be extended (because "color: #f00;" should be reverted), result = -1;
+     * - "color: #00f; font-weight: bold;" - it can NOT be extended (because "color: #00f;" replaces "color: #f00;"), result = -1.
+     *
      * @param CssStyle $other
      *
-     * @return bool
+     * @return int
      */
-    public function visuallyEquals(CssStyle $other) : bool
+    public function compareTo(CssStyle $other) : int
     {
-        foreach ($this->declarations as $property => $declaration) {
-            if (!$other->hasProperty($property)
-                || !$this->declarations[$property]->equals($other->declarations[$property])
-            ) {
-                return false;
-            }
-        }
-
-        foreach ($other->declarations as $property => $declaration) {
-            if (!$this->hasProperty($property)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * @param CssStyle $other
-     *
-     * @return int -1 when other cannot be extended from this, 0 when styles are equals and difference (> 0) when other can be extended from this
-     */
-    public function compareProperties(CssStyle $other) : int
-    {
-        /**
-         * @var string $property
-         * @var CssDeclaration $declaration
-         */
-
         foreach ($this->declarations as $property => $declaration) {
             if (!$other->hasProperty($property) || !$declaration->equals($other->declarations[$property])) {
                 return -1;
             }
         }
 
-        $diff = 0;
+        $result = 0;
 
         foreach ($other->declarations as $property => $declaration) {
             if (!$this->hasProperty($property)) {
-                $diff++;
+                $result++;
             }
         }
 
-        return $diff;
+        return $result;
     }
 
     /**

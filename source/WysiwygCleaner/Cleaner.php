@@ -32,14 +32,14 @@ class Cleaner
     private $htmlRenderer;
 
     /**
-     * @param array $removeClassesRegexps
-     * @param array $removeStylesRegexps
-     * @param array $removeIdsRegexps
+     * @param array[] $userStyleRules
+     * @param array[] $userClassesRules
+     * @param array[] $userAttributesRules
      */
     public function __construct(
-        array $removeClassesRegexps = [],
-        array $removeStylesRegexps = [],
-        array $removeIdsRegexps = []
+        array $userStyleRules = [],
+        array $userClassesRules = [],
+        array $userAttributesRules = []
     ) {
         $cssParser = new CssParser();
 
@@ -50,25 +50,26 @@ class Cleaner
         }
 
         $this->htmlParser = new HtmlParser();
-        $this->styleBuilder = new StyleBuilder($cssParser, $styleSheet);
+
+        $this->styleBuilder = new StyleBuilder(
+            $cssParser,
+            $styleSheet,
+            \array_merge($userStyleRules, CleanerDefaults::STYLE_RULES)
+        );
 
         $this->reworkFlattener = new ReworkFlattener(
-            CleanerDefaults::FLATTEN_INLINE_TAGS,
-            \array_merge(CleanerDefaults::REMOVE_IDS, $removeIdsRegexps),
-            \array_merge(CleanerDefaults::REMOVE_CLASSES, $removeClassesRegexps),
-            CleanerDefaults::KEEP_ATTRIBUTES
+            CleanerDefaults::FLATTEN_TAGS_RULES,
+            \array_merge($userClassesRules, CleanerDefaults::FLATTEN_CLASSES_RULES),
+            \array_merge($userAttributesRules, CleanerDefaults::FLATTEN_ATTRIBUTES_RULES)
         );
 
         $this->reworkCleaner = new ReworkCleaner(
-            CleanerDefaults::KEEP_WHITESPACE_PROPS,
-            CleanerDefaults::FLATTEN_BLOCK_TAGS,
-            $removeStylesRegexps,
-            CleanerDefaults::REMOVE_BLOCK_STYLES
+            CleanerDefaults::CLEAN_WHITESPACE_STYLE_RULES,
+            CleanerDefaults::CLEAN_TAGS_RULES
         );
 
         $this->reworkReconstructor = new ReworkReconstructor(
-            CleanerDefaults::PREFERABLE_TAGS,
-            CleanerDefaults::KEEP_WHITESPACE_PROPS,
+            CleanerDefaults::RECONSTRUCT_TAGS,
             new CssRenderer(),
             $styleSheet
         );

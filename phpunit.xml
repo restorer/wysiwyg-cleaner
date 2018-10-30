@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- https://phpunit.readthedocs.io/en/7.4/configuration.html#appendixes-configuration -->
+<phpunit bootstrap="test/bootstrap.php" colors="true">
+    <testsuites>
+        <testsuite name="Integration">
+            <directory>test/integration</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

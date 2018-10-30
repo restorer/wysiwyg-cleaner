@@ -25,14 +25,19 @@ class StyleBuilder
     /** @var CssDeclaration */
     private $inlineDisplayDeclaration;
 
+    /** @var array[] */
+    private $styleRules;
+
     /**
      * @param CssParser $cssParser
      * @param CssStyleSheet $styleSheet
+     * @param array[] $styleRules
      */
-    public function __construct(CssParser $cssParser, CssStyleSheet $styleSheet)
+    public function __construct(CssParser $cssParser, CssStyleSheet $styleSheet, array $styleRules)
     {
         $this->cssParser = $cssParser;
         $this->styleSheet = $styleSheet;
+        $this->styleRules = $styleRules;
 
         $this->inlineDisplayDeclaration = new CssDeclaration(
             CssDeclaration::PROP_DISPLAY,
@@ -74,7 +79,11 @@ class StyleBuilder
             $computedStyle = clone $computedStyle;
             $computedStyle->extendAll($cascadeStyle);
 
-            $container->setComputedStyle($computedStyle);
+            $container->setComputedStyle(
+                CleanerUtils::cleanupStyle($this->styleRules, $computedStyle, $container->getTag())
+            );
+
+            $container->removeAttribute(HtmlElement::ATTR_STYLE);
         } elseif (!($container instanceof HtmlDocument)) {
             throw new CleanerException(
                 'Doesn\'t know what to do with container "' . CleanerUtils::getClass($container) . '"'
@@ -90,7 +99,7 @@ class StyleBuilder
                     $textComputedStyle->extend($this->inlineDisplayDeclaration);
                 }
 
-                $child->setComputedStyle($textComputedStyle);
+                $child->setComputedStyle(CleanerUtils::cleanupStyle($this->styleRules, $textComputedStyle));
             } else {
                 throw new CleanerException(
                     'Doesn\'t know what to do with child "' . CleanerUtils::getClass($child) . '"'

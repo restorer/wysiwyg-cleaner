@@ -40,13 +40,11 @@ class LayoutBuilder
         if ($container instanceof HtmlDocument) {
             $box = new LayoutBox(true);
         } elseif ($container instanceof HtmlElement) {
-            $display = $container->getComputedStyle()->getDisplay();
-
-            if ($display === CssDeclaration::DISPLAY_NONE) {
+            if ($container->getComputedStyle()->getDisplay() === CssDeclaration::DISPLAY_NONE) {
                 throw new CleanerException('Internal error: root node shouldn\'t have display "none"');
             }
 
-            $box = new LayoutBox(CleanerUtils::isBlockyDisplay($display), $container);
+            $box = new LayoutBox($container->getComputedStyle()->isBlockyDisplay(), $container);
         } else {
             throw new CleanerException(
                 'Doesn\'t know what to do with container "' . CleanerUtils::getClass($container) . '"'
@@ -55,13 +53,11 @@ class LayoutBuilder
 
         foreach ($container->getChildren() as $child) {
             if ($child instanceof HtmlElement) {
-                $display = $child->getComputedStyle()->getDisplay();
-
-                if ($display === CssDeclaration::DISPLAY_NONE) {
+                if ($child->getComputedStyle()->getDisplay() === CssDeclaration::DISPLAY_NONE) {
                     continue;
                 }
 
-                if (CleanerUtils::isBlockyDisplay($display)) {
+                if ($child->getComputedStyle()->isBlockyDisplay()) {
                     $box->getBlockContainer()->appendChild($this->buildLayoutTree($child));
                 } else {
                     $box->getInlineContainer()->appendChild($this->buildLayoutTree($child));

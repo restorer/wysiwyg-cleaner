@@ -13,17 +13,23 @@ class HtmlText implements HtmlNode
     /** @var CssStyle|null */
     private $computedStyle;
 
+    /** @var bool */
+    private $strippable;
+
     /**
      * @param string $text
      * @param CssStyle|null $computedStyle
+     * @param bool $strippable
      */
-    public function __construct(string $text, $computedStyle = null)
+    public function __construct(string $text, $computedStyle = null, bool $strippable = false)
     {
         $this->text = $text;
 
         if ($computedStyle !== null) {
             $this->computedStyle = $computedStyle;
         }
+
+        $this->strippable = $strippable;
     }
 
     /**
@@ -59,6 +65,14 @@ class HtmlText implements HtmlNode
     }
 
     /**
+     * @return string
+     */
+    public function getNodeType() : string
+    {
+        return HtmlNode::TYPE_TEXT;
+    }
+
+    /**
      * @return CssStyle
      */
     public function getComputedStyle() : CssStyle
@@ -72,6 +86,22 @@ class HtmlText implements HtmlNode
     public function setComputedStyle(CssStyle $computedStyle)
     {
         $this->computedStyle = $computedStyle;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isStrippable() : bool
+    {
+        return $this->strippable;
+    }
+
+    /**
+     * @param bool $strippable
+     */
+    public function setStrippable(bool $strippable)
+    {
+        $this->strippable = $strippable;
     }
 
     /**
