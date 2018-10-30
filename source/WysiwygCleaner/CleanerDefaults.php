@@ -26,6 +26,11 @@ class CleanerDefaults
         [false, 'color', 'inline' => false],
         [false, '/^font/', 'tag' => 'img'],
         [false, '/^font/', 'inline' => false],
+        [false, 'cursor'],
+        [false, 'top'],
+        [false, 'left'],
+        [false, 'margin', '0px'],
+        [false, 'padding', '0px'],
         [true],
     ];
 
@@ -40,7 +45,8 @@ class CleanerDefaults
     ];
 
     const FLATTEN_CLASSES_RULES = [
-        [false, '/^ng-*/'],
+        [false, '/^ng\-/'],
+        [false, '/^mce\-/'],
         [true],
     ];
 
@@ -51,7 +57,7 @@ class CleanerDefaults
         [true, 'alt'],
         [true, 'width'],
         [true, 'height'],
-        [false, 'id', '/^_mce_caret$/'],
+        [false, 'id', '/^_?mce/'],
         [true, 'id'],
         [false],
     ];
