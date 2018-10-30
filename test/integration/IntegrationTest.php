@@ -21,9 +21,9 @@ class IntegrationTest extends TestCase
     public function testBasic()
     {
         static::assertEquals(
-            '<p style="color: #f00; font-weight: bold;">test</p>',
+            '<p style="color: #f00; font-weight: bold;">AB</p>',
             $this->cleaner->clean(
-                '<p><span style="color: #f00;"><strong>t</strong></span><strong><span style="color: #f00;">est</span></strong></p>'
+                '<p><span style="color: #f00;"><strong>A</strong></span><strong><span style="color: #f00;">B</span></strong></p>'
             )
         );
     }
@@ -71,6 +71,17 @@ class IntegrationTest extends TestCase
         static::assertEquals(
             '<p id="&quot;&apos;">"A"</p>',
             $this->cleaner->clean('<p id="&quot;\'">"A"</p>')
+        );
+    }
+
+    /**
+     * @throws \WysiwygCleaner\CleanerException
+     */
+    public function testReconstructWhitespaces()
+    {
+        static::assertEquals(
+            '<p style="font-style: italic;">A <strong>B</strong> C</p>',
+            $this->cleaner->clean('<p><em>A <strong>B</strong> C</em></p>')
         );
     }
 }

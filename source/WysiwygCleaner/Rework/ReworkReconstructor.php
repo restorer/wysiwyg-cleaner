@@ -59,7 +59,7 @@ class ReworkReconstructor
     {
         $this->reconstructStructure($document);
         $this->reconstructTags($document);
-        $this->reconstructStyles($document, new CssSelector());
+        $this->reconstructStyles($document, new CssSelector(), new CssStyle());
         $this->reconstructAttributes($document);
     }
 
@@ -76,6 +76,7 @@ class ReworkReconstructor
 
         $children = [];
         $elementsStack = [];
+        $pendingStrippableNode = null;
 
         /** @noinspection ForeachInvariantsInspection */
         for ($i = 0, $len = \count($container->getChildren()); $i < $len; $i++) {
@@ -115,13 +116,23 @@ class ReworkReconstructor
                 continue;
             }
 
+            if ($child->isStrippable()) {
+                if ($pendingStrippableNode !== null) {
+                    // Should not happen, but...
+                    $children[] = $pendingStrippableNode;
+                    $elementsStack = [];
+                }
+
+                $pendingStrippableNode = $child;
+                continue;
+            }
+
             /** @var HtmlElement|null $intoElement */
             /** @var int $stylesDiff */
 
             for (; ;) {
                 $intoElement = empty($elementsStack) ? null : end($elementsStack);
-                $intoStyle = ($intoElement === null ? $initialTextStyle : $intoElement->getComputedStyle());
-                $stylesDiff = ($isStrippableLineBreak ? 0 : $intoStyle->compareTo($childStyle));
+                $stylesDiff = ($intoElement === null ? $initialTextStyle : $intoElement->getComputedStyle())->compareTo($childStyle);
 
                 if ($intoElement === null || $stylesDiff >= 0) {
                     break;
@@ -130,7 +141,17 @@ class ReworkReconstructor
                 array_pop($elementsStack);
             }
 
-            if ($stylesDiff > 0 && !$isStrippableLineBreak) {
+            if ($pendingStrippableNode !== null) {
+                if ($intoElement === null) {
+                    $children[] = $pendingStrippableNode;
+                } else {
+                    $intoElement->appendChild($pendingStrippableNode);
+                }
+
+                $pendingStrippableNode = null;
+            }
+
+            if ($stylesDiff != 0) {
                 $wrapperElement = new HtmlElement('', null, $child->getComputedStyle());
                 $elementsStack[] = $wrapperElement;
 
@@ -148,6 +169,11 @@ class ReworkReconstructor
             } else {
                 $intoElement->appendChild($child);
             }
+        }
+
+        if ($pendingStrippableNode !== null) {
+            // Should not happen, but...
+            $children[] = $pendingStrippableNode;
         }
 
         if (($container instanceof HtmlElement)
@@ -204,10 +230,11 @@ class ReworkReconstructor
     /**
      * @param HtmlContainer $container
      * @param CssSelector $selector
+     * @param CssStyle $inheritedStyle
      *
      * @throws CleanerException
      */
-    private function reconstructStyles(HtmlContainer $container, CssSelector $selector)
+    private function reconstructStyles(HtmlContainer $container, CssSelector $selector, CssStyle $inheritedStyle)
     {
         foreach ($container->getChildren() as $child) {
             if ($child instanceof HtmlText) {
@@ -222,19 +249,22 @@ class ReworkReconstructor
             }
 
             $childSelector = $selector->combine(CssSelector::forElement($child));
-            $baseChildStyle = $this->styleSheet->resolveStyle($childSelector);
+            $childComputedStyle = $child->getComputedStyle();
             $reconstructedChildStyle = new CssStyle();
 
-            foreach ($child->getComputedStyle()->getDeclarations() as $property => $declaration) {
-                if (!$baseChildStyle->hasProperty($property)
-                    || !$declaration->equals($baseChildStyle->getDeclaration($property))
+            $inheritedStyle = clone $inheritedStyle;
+            $inheritedStyle->extendAll($this->styleSheet->resolveStyle($childSelector));
+
+            foreach ($childComputedStyle->getDeclarations() as $property => $declaration) {
+                if (!$inheritedStyle->hasProperty($property)
+                    || !$declaration->equals($inheritedStyle->getDeclaration($property))
                 ) {
                     $reconstructedChildStyle->append($declaration);
                 }
             }
 
             $child->setComputedStyle($reconstructedChildStyle);
-            $this->reconstructStyles($child, $childSelector);
+            $this->reconstructStyles($child, $childSelector, $childComputedStyle);
         }
     }
 
