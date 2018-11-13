@@ -35,16 +35,18 @@ class Cleaner
      * @param array[] $userStyleRules
      * @param array[] $userClassesRules
      * @param array[] $userAttributesRules
+     * @param string $userStyleSheet
      */
     public function __construct(
         array $userStyleRules = [],
         array $userClassesRules = [],
-        array $userAttributesRules = []
+        array $userAttributesRules = [],
+        string $userStyleSheet = ''
     ) {
         $cssParser = new CssParser();
 
         try {
-            $styleSheet = $cssParser->parseStyleSheet(CleanerDefaults::USER_AGENT_STYLESHEET);
+            $styleSheet = $cssParser->parseStyleSheet(CleanerDefaults::USER_AGENT_STYLESHEET . "\n" . $userStyleSheet);
         } catch (CleanerException $e) {
             throw new \RuntimeException($e->getMessage(), $e->getCode(), $e);
         }
