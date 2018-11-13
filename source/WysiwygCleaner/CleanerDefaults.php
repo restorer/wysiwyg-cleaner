@@ -29,8 +29,12 @@ class CleanerDefaults
         [false, 'cursor'],
         [false, 'top'],
         [false, 'left'],
-        [false, 'margin', '0px'],
-        [false, 'padding', '0px'],
+        [false, '/^margin/', '0px'],
+        [false, '/^padding/', '0px'],
+        [false, '/^border/', '0px'],
+        [false, '/^border/', 'none'],
+        [false, 'vertical-align', 'baseline'],
+        [false, 'font-stretch', 'normal'],
         [true],
     ];
 
